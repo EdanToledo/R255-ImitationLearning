@@ -36,7 +36,9 @@ flags.DEFINE_integer("seed", 0, "Random seed.")
 flags.DEFINE_integer("num_steps", 1_000_000, "Number of env steps to run.")
 flags.DEFINE_integer("eval_every", 50_000, "How often to run evaluation.")
 flags.DEFINE_integer("evaluation_episodes", 10, "Evaluation episodes.")
-
+flags.DEFINE_integer(
+    "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
+)
 
 def build_experiment_config():
     """Builds TD3 experiment config which can be executed in different ways."""
@@ -44,13 +46,12 @@ def build_experiment_config():
 
     suite, task = FLAGS.env_name.split(":", 1)
     network_factory = lambda spec: td3.make_networks(
-        spec, hidden_layer_sizes=(256, 256, 256)
+        spec, hidden_layer_sizes=(256, 256)
     )
 
     # Construct the agent.
     config = td3.TD3Config(
-        policy_learning_rate=3e-4,
-        critic_learning_rate=3e-4,
+        min_replay_size=1, samples_per_insert_tolerance_rate=2.0, policy_learning_rate=5e-4, critic_learning_rate=5e-4
     )
     td3_builder = td3.TD3Builder(config)
     # pylint:disable=g-long-lambda
@@ -68,7 +69,7 @@ def main(_):
     config = build_experiment_config()
     if FLAGS.run_distributed:
         program = experiments.make_distributed_experiment(
-            experiment=config, num_actors=4
+            experiment=config, num_actors=FLAGS.num_distributed_actors
         )
         lp.launch(program, xm_resources=lp_utils.make_xm_docker_resources(program))
     else:

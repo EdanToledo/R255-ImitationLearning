@@ -49,6 +49,9 @@ EVAL_EVERY = flags.DEFINE_integer(
 EVAL_EPISODES = flags.DEFINE_integer(
     "evaluation_episodes", 10, "Number of evaluation episodes to run periodically."
 )
+NUM_ACTORS = flags.DEFINE_integer(
+    "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
+)
 
 
 def build_experiment_config():
@@ -88,7 +91,7 @@ def main(_):
     config = build_experiment_config()
     if RUN_DISTRIBUTED.value:
         program = experiments.make_distributed_experiment(
-            experiment=config, num_actors=4
+            experiment=config, num_actors=NUM_ACTORS.value
         )
         lp.launch(program, xm_resources=lp_utils.make_xm_docker_resources(program))
     else:

@@ -35,7 +35,9 @@ flags.DEFINE_integer("seed", 0, "Random seed.")
 flags.DEFINE_integer("num_steps", 1_000_000, "Number of env steps to run.")
 flags.DEFINE_integer("eval_every", 50_000, "How often to run evaluation.")
 flags.DEFINE_integer("evaluation_episodes", 10, "Evaluation episodes.")
-
+flags.DEFINE_integer(
+    "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
+)
 
 def build_experiment_config():
     """Builds D4PG experiment config which can be executed in different ways."""
@@ -76,7 +78,7 @@ def main(_):
     config = build_experiment_config()
     if FLAGS.run_distributed:
         program = experiments.make_distributed_experiment(
-            experiment=config, num_actors=4
+            experiment=config, num_actors=FLAGS.num_distributed_actors
         )
         lp.launch(program, xm_resources=lp_utils.make_xm_docker_resources(program))
     else:

@@ -38,7 +38,9 @@ flags.DEFINE_integer("seed", 0, "Random seed.")
 flags.DEFINE_integer("num_steps", 1_000_000, "Number of env steps to run.")
 flags.DEFINE_integer("eval_every", 50_000, "How often to run evaluation.")
 flags.DEFINE_integer("evaluation_episodes", 10, "Evaluation episodes.")
-
+flags.DEFINE_integer(
+    "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
+)
 
 def build_experiment_config():
     """Builds SAC experiment config which can be executed in different ways."""
@@ -48,23 +50,19 @@ def build_experiment_config():
     environment = helpers.make_environment(suite, task)
 
     environment_spec = specs.make_environment_spec(environment)
-    network_factory = lambda spec: sac.make_networks(
-        spec, hidden_layer_sizes=(256, 256, 256)
-    )
-
     # Construct the agent.
     config = sac.SACConfig(
-        learning_rate=3e-4,
-        n_step=2,
         target_entropy=sac.target_entropy_from_env_spec(environment_spec),
-        input_normalization=normalization.NormalizationConfig(),
+        min_replay_size=1,
+        samples_per_insert_tolerance_rate=2.0,
+        learning_rate=5e-4
     )
     sac_builder = builder.SACBuilder(config)
 
     return experiments.ExperimentConfig(
         builder=sac_builder,
         environment_factory=lambda seed: helpers.make_environment(suite, task),
-        network_factory=network_factory,
+        network_factory=sac.make_networks,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
     )
@@ -74,7 +72,7 @@ def main(_):
     config = build_experiment_config()
     if FLAGS.run_distributed:
         program = experiments.make_distributed_experiment(
-            experiment=config, num_actors=4
+            experiment=config, num_actors=FLAGS.num_distributed_actors
         )
         lp.launch(program, xm_resources=lp_utils.make_xm_docker_resources(program))
     else:

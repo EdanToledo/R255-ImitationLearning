@@ -36,7 +36,7 @@ flags.DEFINE_integer("num_steps", 1_000_000, "Number of env steps to run.")
 flags.DEFINE_integer("eval_every", 50_000, "How often to run evaluation.")
 flags.DEFINE_integer("evaluation_episodes", 10, "Evaluation episodes.")
 flags.DEFINE_integer(
-    "num_distributed_actors", 64, "Number of actors to use in the distributed setting."
+    "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
 )
 
 
@@ -49,10 +49,11 @@ def build_experiment_config():
         normalize_advantage=True,
         normalize_value=True,
         obs_normalization_fns_factory=ppo.build_mean_std_normalizer,
+        learning_rate=5e-4
     )
     ppo_builder = ppo.PPOBuilder(config)
 
-    layer_sizes = (256, 256, 256)
+    layer_sizes = (256, 256)
     return experiments.ExperimentConfig(
         builder=ppo_builder,
         environment_factory=lambda seed: helpers.make_environment(suite, task),
