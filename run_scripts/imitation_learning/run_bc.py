@@ -26,7 +26,7 @@ from acme import types
 from acme.agents.jax import actor_core as actor_core_lib
 from acme.agents.jax import bc
 from acme.datasets import tfds
-import helpers
+import run_scripts.imitation_learning.helpers as helpers
 from absl import app
 from acme.jax import experiments
 from acme.jax import types as jax_types

@@ -1,12 +1,8 @@
-# Acme baseline examples
+# Baselines for Continuous-action RL Algorithms
 
-This directory contains launcher scripts for the baselines referenced in [the paper](https://arxiv.org/abs/2006.00979).
-These scripts reproduce the plots given in the paper.
+This folder contains run scripts which reproduce published baselines for
+various RL algorithms focusing on continuous action spaces.
 
-## How to run
-
-A command line for running the SAC baseline example in distributed mode on the Hopper environment limited to 100k environment steps:
-```
-cd examples/baselines/rl_continuous
-python run_sac.py --run_distributed=True --env_name=gym:Hopper-v2 --num_steps=100_000
-```
+For consistency, the architecture of any network used within these baselines
+(e.g. the policy or critic) should be comparable in size and complexity to
+an MLP([256] * 3).

@@ -25,7 +25,7 @@ from acme import specs
 from acme.agents.jax import d4pg
 from acme.agents.jax import pwil
 from acme.datasets import tfds
-import helpers
+import run_scripts.imitation_learning.helpers as helpers
 from absl import app
 from acme.jax import experiments
 from acme.jax import networks as networks_lib

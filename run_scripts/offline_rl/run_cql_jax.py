@@ -22,7 +22,7 @@ from acme.agents.jax import actor_core as actor_core_lib
 from acme.agents.jax import actors
 from acme.agents.jax import cql
 from acme.datasets import tfds
-import helpers
+import run_scripts.imitation_learning.helpers as helpers
 from acme.jax import variable_utils
 from acme.utils import loggers
 import haiku as hk

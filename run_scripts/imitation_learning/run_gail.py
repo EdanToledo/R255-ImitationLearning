@@ -38,7 +38,7 @@ from acme import specs
 from acme.agents.jax import ail
 from acme.agents.jax import td3
 from acme.datasets import tfds
-import helpers
+import run_scripts.imitation_learning.helpers as helpers
 from absl import app
 from acme.jax import experiments
 from acme.jax import networks as networks_lib

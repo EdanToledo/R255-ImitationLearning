@@ -23,7 +23,7 @@ from acme import specs
 from acme.agents.jax import sac
 from acme.agents.jax import sqil
 from acme.datasets import tfds
-import helpers
+import run_scripts.imitation_learning.helpers as helpers
 from absl import app
 from acme.jax import experiments
 from acme.utils import lp_utils

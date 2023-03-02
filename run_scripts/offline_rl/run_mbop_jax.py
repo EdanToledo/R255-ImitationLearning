@@ -22,7 +22,7 @@ import acme
 from acme import specs
 from acme.agents.jax import mbop
 from acme.datasets import tfds
-import helpers
+import run_scripts.imitation_learning.helpers as helpers
 from acme.jax import running_statistics
 from acme.utils import loggers
 import jax
