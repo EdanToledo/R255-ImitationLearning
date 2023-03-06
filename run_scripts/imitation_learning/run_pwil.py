@@ -18,6 +18,7 @@ The network structure and hyperparameters are the same as the one used in the
 PWIL paper: https://arxiv.org/pdf/2006.04678.pdf.
 """
 
+import functools
 from typing import Sequence
 
 from absl import flags
@@ -25,6 +26,7 @@ from acme import specs
 from acme.agents.jax import d4pg
 from acme.agents.jax import pwil
 from acme.datasets import tfds
+from acme.utils.experiment_utils import make_experiment_logger
 import run_scripts.imitation_learning.helpers as helpers
 from absl import app
 from acme.jax import experiments
@@ -152,6 +154,7 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         network_factory=make_networks,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
+        logger_factory=functools.partial(make_experiment_logger, directory="~/acme/PWIL")
     )
 
 

@@ -14,8 +14,10 @@
 
 """Example running SAC on continuous control tasks."""
 
+import functools
 from absl import flags
 from acme.agents.jax import td3
+from acme.utils.experiment_utils import make_experiment_logger
 import helpers
 from absl import app
 from acme.jax import experiments
@@ -61,6 +63,7 @@ def build_experiment_config():
         network_factory=network_factory,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
+        logger_factory=functools.partial(make_experiment_logger, directory="~/acme/TD3")
     )
     # pylint:enable=g-long-lambda
 

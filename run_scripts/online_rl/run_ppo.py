@@ -14,8 +14,10 @@
 
 """Example running PPO on continuous control tasks."""
 
+import functools
 from absl import flags
 from acme.agents.jax import ppo
+from acme.utils.experiment_utils import make_experiment_logger
 import helpers
 from absl import app
 from acme.jax import experiments
@@ -60,6 +62,7 @@ def build_experiment_config():
         network_factory=lambda spec: ppo.make_networks(spec, layer_sizes),
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
+        logger_factory=functools.partial(make_experiment_logger, directory="~/acme/PPO")
     )
 
 

@@ -14,11 +14,13 @@
 
 """Example running SAC on continuous control tasks."""
 
+import functools
 from absl import flags
 from acme import specs
 from acme.agents.jax import normalization
 from acme.agents.jax import sac
 from acme.agents.jax.sac import builder
+from acme.utils.experiment_utils import make_experiment_logger
 import helpers
 from absl import app
 from acme.jax import experiments
@@ -65,6 +67,7 @@ def build_experiment_config():
         network_factory=sac.make_networks,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
+        logger_factory=functools.partial(make_experiment_logger, directory="~/acme/SAC")
     )
 
 

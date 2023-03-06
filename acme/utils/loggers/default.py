@@ -33,6 +33,7 @@ def make_default_logger(
     print_fn: Optional[Callable[[str], None]] = None,
     serialize_fn: Optional[Callable[[Mapping[str, Any]], str]] = base.to_numpy,
     steps_key: str = 'steps',
+    directory="~/acme"
 ) -> base.Logger:
   """Makes a default Acme logger.
 
@@ -53,17 +54,17 @@ def make_default_logger(
   if not print_fn:
     print_fn = logging.info
   terminal_logger = terminal.TerminalLogger(label=label, print_fn=print_fn)
-
+  
   loggers = [terminal_logger]
 
   if save_data:
-    loggers.append(csv.CSVLogger(label=label))
+    loggers.append(csv.CSVLogger(label=label, directory_or_file=directory))
 
   # Dispatch to all writers and filter Nones and by time.
   logger = aggregators.Dispatcher(loggers, serialize_fn)
-  logger = filters.NoneFilter(logger)
-  if asynchronous:
-    logger = async_logger.AsyncLogger(logger)
-  logger = filters.TimeFilter(logger, time_delta)
+  # logger = filters.NoneFilter(logger)
+  # if asynchronous:
+  #   logger = async_logger.AsyncLogger(logger)
+  # logger = filters.TimeFilter(logger, time_delta)
 
   return logger

@@ -33,11 +33,13 @@ The changes lead to an improved agent able to learn from a single demonstration
 (even for Humanoid).
 """
 
+import functools
 from absl import flags
 from acme import specs
 from acme.agents.jax import ail
 from acme.agents.jax import td3
 from acme.datasets import tfds
+from acme.utils.experiment_utils import make_experiment_logger
 import run_scripts.imitation_learning.helpers as helpers
 from absl import app
 from acme.jax import experiments
@@ -53,18 +55,18 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_bool(
     "run_distributed",
-    True,
+    False,
     "Should an agent be executed in a distributed "
     "way. If False, will run single-threaded.",
 )
 flags.DEFINE_string("env_name", "HalfCheetah-v2", "What environment to run")
 flags.DEFINE_integer("seed", 0, "Random seed.")
-flags.DEFINE_integer("num_steps", 1_000_000, "Number of env steps to run.")
+flags.DEFINE_integer("num_steps", 500_000, "Number of env steps to run.")
 flags.DEFINE_integer("eval_every", 50_000, "Number of env steps to run.")
-flags.DEFINE_integer("num_demonstrations", 10, "Number of demonstration trajectories.")
+flags.DEFINE_integer("num_demonstrations", None, "Number of demonstration trajectories.")
 flags.DEFINE_integer("evaluation_episodes", 10, "Evaluation episodes.")
 flags.DEFINE_integer(
-    "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
+    "num_distributed_actors", 1, "Number of actors to use in the distributed setting."
 )
 
 def build_experiment_config() -> experiments.ExperimentConfig:
@@ -117,9 +119,7 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         )
 
     # Create DAC agent.
-    ail_config = ail.AILConfig(
-        direct_rl_batch_size=td3_config.batch_size * td3_config.num_sgd_steps_per_step
-    )
+    ail_config = ail.AILConfig(direct_rl_batch_size=td3_config.batch_size * td3_config.num_sgd_steps_per_step)
 
     env_name = FLAGS.env_name
 
@@ -142,12 +142,15 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         make_demonstrations=make_demonstrations,
     )
 
+    
+
     return experiments.ExperimentConfig(
         builder=ail_builder,
         environment_factory=environment_factory,
         network_factory=network_factory,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
+        logger_factory=functools.partial(make_experiment_logger, directory="~/acme/GAIL")
     )
 
 

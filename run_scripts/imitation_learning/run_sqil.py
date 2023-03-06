@@ -18,11 +18,13 @@ SQIL: Imitation Learning via Reinforcement Learning with Sparse Rewards
 Reddy et al., 2019 https://arxiv.org/abs/1905.11108
 """
 
+import functools
 from absl import flags
 from acme import specs
 from acme.agents.jax import sac
 from acme.agents.jax import sqil
 from acme.datasets import tfds
+from acme.utils.experiment_utils import make_experiment_logger
 import run_scripts.imitation_learning.helpers as helpers
 from absl import app
 from acme.jax import experiments
@@ -95,6 +97,7 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         network_factory=sac.make_networks,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
+        logger_factory=functools.partial(make_experiment_logger, directory="~/acme/SQIL")
     )
 
 
