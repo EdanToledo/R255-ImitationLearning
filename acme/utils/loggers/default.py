@@ -23,6 +23,7 @@ from acme.utils.loggers import base
 from acme.utils.loggers import csv
 from acme.utils.loggers import filters
 from acme.utils.loggers import terminal
+from acme.utils.loggers.tf_summary import TFSummaryLogger
 
 
 def make_default_logger(
@@ -50,21 +51,23 @@ def make_default_logger(
   Returns:
     A logger object that responds to logger.write(some_dict).
   """
-  del steps_key
+  # del steps_key
   if not print_fn:
     print_fn = logging.info
+
+  tb_logger = TFSummaryLogger(directory, label, steps_key)
   terminal_logger = terminal.TerminalLogger(label=label, print_fn=print_fn)
   
-  loggers = [terminal_logger]
+  loggers = [terminal_logger, tb_logger]
 
   if save_data:
     loggers.append(csv.CSVLogger(label=label, directory_or_file=directory))
 
   # Dispatch to all writers and filter Nones and by time.
   logger = aggregators.Dispatcher(loggers, serialize_fn)
-  # logger = filters.NoneFilter(logger)
-  # if asynchronous:
-  #   logger = async_logger.AsyncLogger(logger)
-  # logger = filters.TimeFilter(logger, time_delta)
+  logger = filters.NoneFilter(logger)
+  if asynchronous:
+    logger = async_logger.AsyncLogger(logger)
+  logger = filters.TimeFilter(logger, time_delta)
 
   return logger

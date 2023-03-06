@@ -44,10 +44,12 @@ flags.DEFINE_bool(
 )
 flags.DEFINE_string("env_name", "HalfCheetah-v2", "What environment to run")
 flags.DEFINE_integer("seed", 0, "Random seed.")
-flags.DEFINE_integer("num_steps", 1_000_000, "Number of env steps to run.")
+flags.DEFINE_integer("num_steps", 500_000, "Number of env steps to run.")
 flags.DEFINE_integer("eval_every", 50_000, "Number of env steps to run.")
-flags.DEFINE_integer("num_demonstrations", 10, "Number of demonstration trajectories.")
-flags.DEFINE_integer("evaluation_episodes", 10, "Evaluation episodes.")
+flags.DEFINE_integer(
+    "num_demonstrations", None, "Number of demonstration trajectories."
+)
+flags.DEFINE_integer("evaluation_episodes", 100, "Evaluation episodes.")
 flags.DEFINE_integer(
     "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
 )
@@ -97,7 +99,7 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         network_factory=sac.make_networks,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
-        logger_factory=functools.partial(make_experiment_logger, directory="~/acme/SQIL")
+        logger_factory=functools.partial(make_experiment_logger, directory="./experiments/SQIL")
     )
 
 

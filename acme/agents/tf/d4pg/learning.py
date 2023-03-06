@@ -109,6 +109,7 @@ class D4PGLearner(acme.Learner):
     # Replicates Variables across multiple accelerators
     if not replicator:
       accelerator = _get_first_available_accelerator_type()
+      print(f"Using {accelerator} as accelerator")
       if accelerator == 'TPU':
         replicator = snt.distribute.TpuReplicator()
       else:
