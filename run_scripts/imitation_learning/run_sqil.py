@@ -99,7 +99,7 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         network_factory=sac.make_networks,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
-        logger_factory=functools.partial(make_experiment_logger, directory="./experiments/SQIL")
+        logger_factory=functools.partial(make_experiment_logger, directory=f"./experiments/SQIL_seed_{FLAGS.seed}_dataset_{FLAGS.num_demonstrations}")
     )
 
 

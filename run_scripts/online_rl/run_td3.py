@@ -63,7 +63,7 @@ def build_experiment_config():
         network_factory=network_factory,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
-        logger_factory=functools.partial(make_experiment_logger, directory="./experiments/TD3")
+        logger_factory=functools.partial(make_experiment_logger, directory=f"./experiments/TD3_seed_{FLAGS.seed}")
     )
     # pylint:enable=g-long-lambda
 
