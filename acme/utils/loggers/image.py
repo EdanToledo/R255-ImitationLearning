@@ -24,53 +24,53 @@ from PIL import Image
 
 
 class ImageLogger(base.Logger):
-  """Logger for writing NumPy arrays as PNG images to disk.
+    """Logger for writing NumPy arrays as PNG images to disk.
 
-  Assumes that all data passed are NumPy arrays that can be converted to images.
+    Assumes that all data passed are NumPy arrays that can be converted to images.
 
-  TODO(jaslanides): Make this stateless/robust to preemptions.
-  """
-
-  def __init__(
-      self,
-      directory: str,
-      *,
-      label: str = '',
-      mode: Optional[str] = None,
-  ):
-    """Initialises the writer.
-
-    Args:
-      directory: Base directory to which images are logged.
-      label: Optional subdirectory in which to save images.
-      mode: Image mode for use with Pillow. If `None` (default), mode is
-        determined by data type. See [0] for details.
-
-    [0] https://pillow.readthedocs.io/en/stable/handbook/concepts.html#modes
+    TODO(jaslanides): Make this stateless/robust to preemptions.
     """
 
-    self._path = self._get_path(directory, label)
-    if not self._path.exists():
-      self._path.mkdir(parents=True)
+    def __init__(
+        self,
+        directory: str,
+        *,
+        label: str = "",
+        mode: Optional[str] = None,
+    ):
+        """Initialises the writer.
 
-    self._mode = mode
-    self._indices = collections.defaultdict(int)
+        Args:
+          directory: Base directory to which images are logged.
+          label: Optional subdirectory in which to save images.
+          mode: Image mode for use with Pillow. If `None` (default), mode is
+            determined by data type. See [0] for details.
 
-  def write(self, data: base.LoggingData):
-    for k, v in data.items():
-      image = Image.fromarray(v, mode=self._mode)
-      path = self._path / f'{k}_{self._indices[k]:06}.png'
-      self._indices[k] += 1
-      with path.open(mode='wb') as f:
-        logging.info('Writing image to %s.', str(path))
-        image.save(f)
+        [0] https://pillow.readthedocs.io/en/stable/handbook/concepts.html#modes
+        """
 
-  def close(self):
-    pass
+        self._path = self._get_path(directory, label)
+        if not self._path.exists():
+            self._path.mkdir(parents=True)
 
-  @property
-  def directory(self) -> str:
-    return str(self._path)
+        self._mode = mode
+        self._indices = collections.defaultdict(int)
 
-  def _get_path(self, *args, **kwargs) -> pathlib.Path:
-    return pathlib.Path(*args, **kwargs)
+    def write(self, data: base.LoggingData):
+        for k, v in data.items():
+            image = Image.fromarray(v, mode=self._mode)
+            path = self._path / f"{k}_{self._indices[k]:06}.png"
+            self._indices[k] += 1
+            with path.open(mode="wb") as f:
+                logging.info("Writing image to %s.", str(path))
+                image.save(f)
+
+    def close(self):
+        pass
+
+    @property
+    def directory(self) -> str:
+        return str(self._path)
+
+    def _get_path(self, *args, **kwargs) -> pathlib.Path:
+        return pathlib.Path(*args, **kwargs)

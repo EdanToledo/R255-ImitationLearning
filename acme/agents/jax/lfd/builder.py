@@ -25,56 +25,65 @@ import dm_env
 LfdStep = Tuple[Any, dm_env.TimeStep]
 
 
-class LfdBuilder(builders.ActorLearnerBuilder[builders.Networks,
-                                              builders.Policy,
-                                              builders.Sample,],
-                 Generic[builders.Networks, builders.Policy, builders.Sample]):
-  """Builder that enables Learning From demonstrations.
+class LfdBuilder(
+    builders.ActorLearnerBuilder[
+        builders.Networks,
+        builders.Policy,
+        builders.Sample,
+    ],
+    Generic[builders.Networks, builders.Policy, builders.Sample],
+):
+    """Builder that enables Learning From demonstrations.
 
-  This builder is not self contained and requires an underlying builder
-  implementing an off-policy algorithm.
-  """
-
-  def __init__(self, builder: builders.ActorLearnerBuilder[builders.Networks,
-                                                           builders.Policy,
-                                                           builders.Sample],
-               demonstrations_factory: Callable[[], Iterator[LfdStep]],
-               config: lfd_config.LfdConfig):
-    """LfdBuilder constructor.
-
-    Args:
-      builder: The underlying builder implementing the off-policy algorithm.
-      demonstrations_factory: Factory returning an infinite stream (as an
-        iterator) of (action, next_timesteps). Episode boundaries in this stream
-        are given by timestep.first() and timestep.last(). Note that in the
-        distributed version of this algorithm, each actor is mixing the same
-        demonstrations with its online experience. This effectively results in
-        the demonstrations being replicated in the replay buffer as many times
-        as the number of actors being used.
-      config: LfD configuration.
+    This builder is not self contained and requires an underlying builder
+    implementing an off-policy algorithm.
     """
-    self._builder = builder
-    self._demonstrations_factory = demonstrations_factory
-    self._config = config
 
-  def make_replay_tables(self, *args, **kwargs):
-    return self._builder.make_replay_tables(*args, **kwargs)
+    def __init__(
+        self,
+        builder: builders.ActorLearnerBuilder[
+            builders.Networks, builders.Policy, builders.Sample
+        ],
+        demonstrations_factory: Callable[[], Iterator[LfdStep]],
+        config: lfd_config.LfdConfig,
+    ):
+        """LfdBuilder constructor.
 
-  def make_dataset_iterator(self, *args, **kwargs):
-    return self._builder.make_dataset_iterator(*args, **kwargs)
+        Args:
+          builder: The underlying builder implementing the off-policy algorithm.
+          demonstrations_factory: Factory returning an infinite stream (as an
+            iterator) of (action, next_timesteps). Episode boundaries in this stream
+            are given by timestep.first() and timestep.last(). Note that in the
+            distributed version of this algorithm, each actor is mixing the same
+            demonstrations with its online experience. This effectively results in
+            the demonstrations being replicated in the replay buffer as many times
+            as the number of actors being used.
+          config: LfD configuration.
+        """
+        self._builder = builder
+        self._demonstrations_factory = demonstrations_factory
+        self._config = config
 
-  def make_adder(self, *args, **kwargs):
-    demonstrations = self._demonstrations_factory()
-    return lfd_adder.LfdAdder(self._builder.make_adder(*args, **kwargs),
-                              demonstrations,
-                              self._config.initial_insert_count,
-                              self._config.demonstration_ratio)
+    def make_replay_tables(self, *args, **kwargs):
+        return self._builder.make_replay_tables(*args, **kwargs)
 
-  def make_actor(self, *args, **kwargs):
-    return self._builder.make_actor(*args, **kwargs)
+    def make_dataset_iterator(self, *args, **kwargs):
+        return self._builder.make_dataset_iterator(*args, **kwargs)
 
-  def make_learner(self, *args, **kwargs):
-    return self._builder.make_learner(*args, **kwargs)
+    def make_adder(self, *args, **kwargs):
+        demonstrations = self._demonstrations_factory()
+        return lfd_adder.LfdAdder(
+            self._builder.make_adder(*args, **kwargs),
+            demonstrations,
+            self._config.initial_insert_count,
+            self._config.demonstration_ratio,
+        )
 
-  def make_policy(self, *args, **kwargs):
-    return self._builder.make_policy(*args, **kwargs)
+    def make_actor(self, *args, **kwargs):
+        return self._builder.make_actor(*args, **kwargs)
+
+    def make_learner(self, *args, **kwargs):
+        return self._builder.make_learner(*args, **kwargs)
+
+    def make_policy(self, *args, **kwargs):
+        return self._builder.make_policy(*args, **kwargs)

@@ -24,53 +24,58 @@ uniform_initializer = hk.initializers.UniformScaling(scale=0.333)
 
 
 class NearZeroInitializedLinear(hk.Linear):
-  """Simple linear layer, initialized at near zero weights and zero biases."""
+    """Simple linear layer, initialized at near zero weights and zero biases."""
 
-  def __init__(self, output_size: int, scale: float = 1e-4):
-    super().__init__(output_size, w_init=hk.initializers.VarianceScaling(scale))
+    def __init__(self, output_size: int, scale: float = 1e-4):
+        super().__init__(output_size, w_init=hk.initializers.VarianceScaling(scale))
 
 
 class LayerNormMLP(hk.Module):
-  """Simple feedforward MLP torso with initial layer-norm.
+    """Simple feedforward MLP torso with initial layer-norm.
 
-  This MLP's first linear layer is followed by a LayerNorm layer and a tanh
-  non-linearity; subsequent layers use `activation`, which defaults to elu.
+    This MLP's first linear layer is followed by a LayerNorm layer and a tanh
+    non-linearity; subsequent layers use `activation`, which defaults to elu.
 
-  Note! The default activation differs from the usual MLP default of ReLU for
-  legacy reasons.
-  """
-
-  def __init__(self,
-               layer_sizes: Sequence[int],
-               w_init: hk.initializers.Initializer = uniform_initializer,
-               activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.elu,
-               activate_final: bool = False,
-               name: str = 'feedforward_mlp_torso'):
-    """Construct the MLP.
-
-    Args:
-      layer_sizes: a sequence of ints specifying the size of each layer.
-      w_init: initializer for Linear layers.
-      activation: nonlinearity to use in the MLP, defaults to elu.
-        Note! The default activation differs from the usual MLP default of ReLU
-        for legacy reasons.
-      activate_final: whether or not to use the activation function on the final
-        layer of the neural network.
-      name: a name for the module.
+    Note! The default activation differs from the usual MLP default of ReLU for
+    legacy reasons.
     """
-    super().__init__(name=name)
 
-    self._network = hk.Sequential([
-        hk.Linear(layer_sizes[0], w_init=w_init),
-        hk.LayerNorm(axis=-1, create_scale=True, create_offset=True),
-        jax.lax.tanh,
-        hk.nets.MLP(
-            layer_sizes[1:],
-            w_init=w_init,
-            activation=activation,
-            activate_final=activate_final),
-    ])
+    def __init__(
+        self,
+        layer_sizes: Sequence[int],
+        w_init: hk.initializers.Initializer = uniform_initializer,
+        activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.elu,
+        activate_final: bool = False,
+        name: str = "feedforward_mlp_torso",
+    ):
+        """Construct the MLP.
 
-  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
-    """Forwards the policy network."""
-    return self._network(inputs)
+        Args:
+          layer_sizes: a sequence of ints specifying the size of each layer.
+          w_init: initializer for Linear layers.
+          activation: nonlinearity to use in the MLP, defaults to elu.
+            Note! The default activation differs from the usual MLP default of ReLU
+            for legacy reasons.
+          activate_final: whether or not to use the activation function on the final
+            layer of the neural network.
+          name: a name for the module.
+        """
+        super().__init__(name=name)
+
+        self._network = hk.Sequential(
+            [
+                hk.Linear(layer_sizes[0], w_init=w_init),
+                hk.LayerNorm(axis=-1, create_scale=True, create_offset=True),
+                jax.lax.tanh,
+                hk.nets.MLP(
+                    layer_sizes[1:],
+                    w_init=w_init,
+                    activation=activation,
+                    activate_final=activate_final,
+                ),
+            ]
+        )
+
+    def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+        """Forwards the policy network."""
+        return self._network(inputs)

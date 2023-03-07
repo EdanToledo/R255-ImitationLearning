@@ -24,8 +24,6 @@ import jax.numpy as jnp
 Observation = jnp.ndarray
 Action = int
 Outputs = Tuple[Tuple[networks.Logits, networks.Value], RecurrentState]
-PolicyValueInitFn = Callable[[networks.PRNGKey, RecurrentState],
-                             networks.Params]
-PolicyValueFn = Callable[[networks.Params, Observation, RecurrentState],
-                         Outputs]
+PolicyValueInitFn = Callable[[networks.PRNGKey, RecurrentState], networks.Params]
+PolicyValueFn = Callable[[networks.Params, Observation, RecurrentState], Outputs]
 RecurrentStateFn = Callable[[jax_types.PRNGKey], RecurrentState]

@@ -54,6 +54,7 @@ flags.DEFINE_integer(
     "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
 )
 
+
 def build_experiment_config() -> experiments.ExperimentConfig:
     """Returns a configuration for SQIL experiments."""
 
@@ -73,7 +74,7 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         target_entropy=sac.target_entropy_from_env_spec(environment_spec),
         min_replay_size=1,
         samples_per_insert_tolerance_rate=2.0,
-        learning_rate=5e-4
+        learning_rate=5e-4,
     )
     sac_builder = sac.SACBuilder(sac_config)
 
@@ -99,7 +100,10 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         network_factory=sac.make_networks,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
-        logger_factory=functools.partial(make_experiment_logger, directory=f"./experiments/SQIL_seed_{FLAGS.seed}_dataset_{FLAGS.num_demonstrations}")
+        logger_factory=functools.partial(
+            make_experiment_logger,
+            directory=f"./experiments/SQIL_seed_{FLAGS.seed}_dataset_{FLAGS.num_demonstrations}",
+        ),
     )
 
 

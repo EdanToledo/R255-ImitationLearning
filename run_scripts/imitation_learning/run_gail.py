@@ -159,7 +159,8 @@ def build_experiment_config() -> experiments.ExperimentConfig:
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
         logger_factory=functools.partial(
-            make_experiment_logger, directory=f"./experiments/GAIL_seed_{FLAGS.seed}_dataset_{FLAGS.num_demonstrations}"
+            make_experiment_logger,
+            directory=f"./experiments/GAIL_seed_{FLAGS.seed}_dataset_{FLAGS.num_demonstrations}",
         ),
     )
 

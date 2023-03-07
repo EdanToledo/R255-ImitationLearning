@@ -22,55 +22,56 @@ import jax.numpy as jnp
 
 
 def fairl_reward(
-    max_reward_magnitude: Optional[float] = None
+    max_reward_magnitude: Optional[float] = None,
 ) -> ail_networks.ImitationRewardFn:
-  """The FAIRL reward function (https://arxiv.org/pdf/1911.02256.pdf).
+    """The FAIRL reward function (https://arxiv.org/pdf/1911.02256.pdf).
 
-  Args:
-    max_reward_magnitude: Clipping value for the reward.
+    Args:
+      max_reward_magnitude: Clipping value for the reward.
 
-  Returns:
-    The function from logit to imitation reward.
-  """
+    Returns:
+      The function from logit to imitation reward.
+    """
 
-  def imitation_reward(logits: networks_lib.Logits) -> float:
-    rewards = jnp.exp(jnp.clip(logits, a_max=20.)) * -logits
-    if max_reward_magnitude is not None:
-      # pylint: disable=invalid-unary-operand-type
-      rewards = jnp.clip(
-          rewards, a_min=-max_reward_magnitude, a_max=max_reward_magnitude)
-    return rewards
+    def imitation_reward(logits: networks_lib.Logits) -> float:
+        rewards = jnp.exp(jnp.clip(logits, a_max=20.0)) * -logits
+        if max_reward_magnitude is not None:
+            # pylint: disable=invalid-unary-operand-type
+            rewards = jnp.clip(
+                rewards, a_min=-max_reward_magnitude, a_max=max_reward_magnitude
+            )
+        return rewards
 
-  return imitation_reward  # pytype: disable=bad-return-type  # jax-ndarray
+    return imitation_reward  # pytype: disable=bad-return-type  # jax-ndarray
 
 
 def gail_reward(
-    reward_balance: float = .5,
-    max_reward_magnitude: Optional[float] = None
+    reward_balance: float = 0.5, max_reward_magnitude: Optional[float] = None
 ) -> ail_networks.ImitationRewardFn:
-  """GAIL reward function (https://arxiv.org/pdf/1606.03476.pdf).
+    """GAIL reward function (https://arxiv.org/pdf/1606.03476.pdf).
 
-  Args:
-    reward_balance: 1 means log(D) reward, 0 means -log(1-D) and other values
-      mean an average of the two.
-    max_reward_magnitude: Clipping value for the reward.
+    Args:
+      reward_balance: 1 means log(D) reward, 0 means -log(1-D) and other values
+        mean an average of the two.
+      max_reward_magnitude: Clipping value for the reward.
 
-  Returns:
-    The function from logit to imitation reward.
-  """
+    Returns:
+      The function from logit to imitation reward.
+    """
 
-  def imitation_reward(logits: networks_lib.Logits) -> float:
-    # Quick Maths:
-    # logits = ln(D) - ln(1-D)
-    # -softplus(-logits) = ln(D)
-    # softplus(logits) = -ln(1-D)
-    rewards = (
-        reward_balance * -jax.nn.softplus(-logits) +
-        (1 - reward_balance) * jax.nn.softplus(logits))
-    if max_reward_magnitude is not None:
-      # pylint: disable=invalid-unary-operand-type
-      rewards = jnp.clip(
-          rewards, a_min=-max_reward_magnitude, a_max=max_reward_magnitude)
-    return rewards
+    def imitation_reward(logits: networks_lib.Logits) -> float:
+        # Quick Maths:
+        # logits = ln(D) - ln(1-D)
+        # -softplus(-logits) = ln(D)
+        # softplus(logits) = -ln(1-D)
+        rewards = reward_balance * -jax.nn.softplus(-logits) + (
+            1 - reward_balance
+        ) * jax.nn.softplus(logits)
+        if max_reward_magnitude is not None:
+            # pylint: disable=invalid-unary-operand-type
+            rewards = jnp.clip(
+                rewards, a_min=-max_reward_magnitude, a_max=max_reward_magnitude
+            )
+        return rewards
 
-  return imitation_reward  # pytype: disable=bad-return-type  # jax-ndarray
+    return imitation_reward  # pytype: disable=bad-return-type  # jax-ndarray

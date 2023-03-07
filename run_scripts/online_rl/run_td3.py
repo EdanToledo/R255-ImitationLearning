@@ -42,6 +42,7 @@ flags.DEFINE_integer(
     "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
 )
 
+
 def build_experiment_config():
     """Builds TD3 experiment config which can be executed in different ways."""
     # Create an environment, grab the spec, and use it to create networks.
@@ -53,7 +54,10 @@ def build_experiment_config():
 
     # Construct the agent.
     config = td3.TD3Config(
-        min_replay_size=1, samples_per_insert_tolerance_rate=2.0, policy_learning_rate=5e-4, critic_learning_rate=5e-4
+        min_replay_size=1,
+        samples_per_insert_tolerance_rate=2.0,
+        policy_learning_rate=5e-4,
+        critic_learning_rate=5e-4,
     )
     td3_builder = td3.TD3Builder(config)
     # pylint:disable=g-long-lambda
@@ -63,7 +67,9 @@ def build_experiment_config():
         network_factory=network_factory,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
-        logger_factory=functools.partial(make_experiment_logger, directory=f"./experiments/TD3_seed_{FLAGS.seed}")
+        logger_factory=functools.partial(
+            make_experiment_logger, directory=f"./experiments/TD3_seed_{FLAGS.seed}"
+        ),
     )
     # pylint:enable=g-long-lambda
 

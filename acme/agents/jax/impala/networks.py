@@ -22,9 +22,9 @@ IMPALANetworks = networks_lib.UnrollableNetwork
 
 
 def make_atari_networks(env_spec: specs.EnvironmentSpec) -> IMPALANetworks:
-  """Builds default IMPALA networks for Atari games."""
+    """Builds default IMPALA networks for Atari games."""
 
-  def make_core_module() -> networks_lib.DeepIMPALAAtariNetwork:
-    return networks_lib.DeepIMPALAAtariNetwork(env_spec.actions.num_values)
+    def make_core_module() -> networks_lib.DeepIMPALAAtariNetwork:
+        return networks_lib.DeepIMPALAAtariNetwork(env_spec.actions.num_values)
 
-  return networks_lib.make_unrollable_network(env_spec, make_core_module)
+    return networks_lib.make_unrollable_network(env_spec, make_core_module)

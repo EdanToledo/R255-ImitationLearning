@@ -31,41 +31,42 @@ import tree
 
 
 class CanonicalSpecWrapper(base.EnvironmentWrapper):
-  """Wrapper which converts environments to use canonical action specs.
+    """Wrapper which converts environments to use canonical action specs.
 
-  This only affects action specs of type `specs.BoundedArray`.
+    This only affects action specs of type `specs.BoundedArray`.
 
-  For bounded action specs, we refer to a canonical action spec as the bounding
-  box [-1, 1]^d where d is the dimensionality of the spec. So the shape and
-  dtype of the spec is unchanged, while the maximum/minimum values are set
-  to +/- 1.
-  """
+    For bounded action specs, we refer to a canonical action spec as the bounding
+    box [-1, 1]^d where d is the dimensionality of the spec. So the shape and
+    dtype of the spec is unchanged, while the maximum/minimum values are set
+    to +/- 1.
+    """
 
-  def __init__(self, environment: dm_env.Environment, clip: bool = False):
-    super().__init__(environment)
-    self._action_spec = environment.action_spec()
-    self._clip = clip
+    def __init__(self, environment: dm_env.Environment, clip: bool = False):
+        super().__init__(environment)
+        self._action_spec = environment.action_spec()
+        self._clip = clip
 
-  def step(self, action: types.NestedArray) -> dm_env.TimeStep:
-    scaled_action = _scale_nested_action(action, self._action_spec, self._clip)
-    return self._environment.step(scaled_action)
+    def step(self, action: types.NestedArray) -> dm_env.TimeStep:
+        scaled_action = _scale_nested_action(action, self._action_spec, self._clip)
+        return self._environment.step(scaled_action)
 
-  def action_spec(self):
-    return _convert_spec(self._environment.action_spec())
+    def action_spec(self):
+        return _convert_spec(self._environment.action_spec())
 
 
 def _convert_spec(nested_spec: types.NestedSpec) -> types.NestedSpec:
-  """Converts all bounded specs in nested spec to the canonical scale."""
+    """Converts all bounded specs in nested spec to the canonical scale."""
 
-  def _convert_single_spec(spec: specs.Array) -> specs.Array:
-    """Converts a single spec to canonical if bounded."""
-    if isinstance(spec, specs.BoundedArray):
-      return spec.replace(
-          minimum=-np.ones(spec.shape), maximum=np.ones(spec.shape))
-    else:
-      return spec
+    def _convert_single_spec(spec: specs.Array) -> specs.Array:
+        """Converts a single spec to canonical if bounded."""
+        if isinstance(spec, specs.BoundedArray):
+            return spec.replace(
+                minimum=-np.ones(spec.shape), maximum=np.ones(spec.shape)
+            )
+        else:
+            return spec
 
-  return tree.map_structure(_convert_single_spec, nested_spec)
+    return tree.map_structure(_convert_single_spec, nested_spec)
 
 
 def _scale_nested_action(
@@ -73,26 +74,26 @@ def _scale_nested_action(
     nested_spec: types.NestedSpec,
     clip: bool,
 ) -> types.NestedArray:
-  """Converts a canonical nested action back to the given nested action spec."""
+    """Converts a canonical nested action back to the given nested action spec."""
 
-  def _scale_action(action: np.ndarray, spec: specs.Array):
-    """Converts a single canonical action back to the given action spec."""
-    if isinstance(spec, specs.BoundedArray):
-      # Get scale and offset of output action spec.
-      scale = spec.maximum - spec.minimum
-      offset = spec.minimum
+    def _scale_action(action: np.ndarray, spec: specs.Array):
+        """Converts a single canonical action back to the given action spec."""
+        if isinstance(spec, specs.BoundedArray):
+            # Get scale and offset of output action spec.
+            scale = spec.maximum - spec.minimum
+            offset = spec.minimum
 
-      # Maybe clip the action.
-      if clip:
-        action = np.clip(action, -1.0, 1.0)
+            # Maybe clip the action.
+            if clip:
+                action = np.clip(action, -1.0, 1.0)
 
-      # Map action to [0, 1].
-      action = 0.5 * (action + 1.0)
+            # Map action to [0, 1].
+            action = 0.5 * (action + 1.0)
 
-      # Map action to [spec.minimum, spec.maximum].
-      action *= scale
-      action += offset
+            # Map action to [spec.minimum, spec.maximum].
+            action *= scale
+            action += offset
 
-    return action
+        return action
 
-  return tree.map_structure(_scale_action, nested_action, nested_spec)
+    return tree.map_structure(_scale_action, nested_action, nested_spec)

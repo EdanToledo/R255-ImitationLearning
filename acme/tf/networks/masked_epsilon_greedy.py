@@ -22,34 +22,34 @@ import trfl
 
 
 class NetworkWithMaskedEpsilonGreedy(snt.Module):
-  """Epsilon greedy sampling with action masking on network outputs."""
+    """Epsilon greedy sampling with action masking on network outputs."""
 
-  def __init__(self,
-               network: snt.Module,
-               epsilon: Optional[tf.Tensor] = None):
-    """Initialize the network and epsilon.
+    def __init__(self, network: snt.Module, epsilon: Optional[tf.Tensor] = None):
+        """Initialize the network and epsilon.
 
-    Usage:
-      Wrap an observation in a dictionary in your environment as follows:
+        Usage:
+          Wrap an observation in a dictionary in your environment as follows:
 
-        observation <-- {"your_key_for_observation": observation,
-                         "legal_actions_mask": your_action_mask_tensor}
+            observation <-- {"your_key_for_observation": observation,
+                             "legal_actions_mask": your_action_mask_tensor}
 
-    and update your network to use 'observation["your_key_for_observation"]'
-    rather than 'observation'.
+        and update your network to use 'observation["your_key_for_observation"]'
+        rather than 'observation'.
 
-    Args:
-      network: the online Q network (the one being optimized)
-      epsilon: probability of taking a random action.
-    """
-    super().__init__()
-    self._network = network
-    self._epsilon = epsilon
+        Args:
+          network: the online Q network (the one being optimized)
+          epsilon: probability of taking a random action.
+        """
+        super().__init__()
+        self._network = network
+        self._epsilon = epsilon
 
-  def __call__(
-      self, observation: Union[Mapping[str, tf.Tensor],
-                               tf.Tensor]) -> tf.Tensor:
-    q = self._network(observation)
-    return trfl.epsilon_greedy(
-        q, epsilon=self._epsilon,
-        legal_actions_mask=observation['legal_actions_mask']).sample()
+    def __call__(
+        self, observation: Union[Mapping[str, tf.Tensor], tf.Tensor]
+    ) -> tf.Tensor:
+        q = self._network(observation)
+        return trfl.epsilon_greedy(
+            q,
+            epsilon=self._epsilon,
+            legal_actions_mask=observation["legal_actions_mask"],
+        ).sample()

@@ -22,31 +22,34 @@ from acme.jax import types
 import rlax
 
 Epsilon = float
-EpsilonPolicy = Callable[[
-    networks_lib.Params, networks_lib.PRNGKey, networks_lib.Observation, Epsilon
-], networks_lib.Action]
-EpsilonSampleFn = Callable[[networks_lib.NetworkOutput, types.PRNGKey, Epsilon],
-                           networks_lib.Action]
+EpsilonPolicy = Callable[
+    [networks_lib.Params, networks_lib.PRNGKey, networks_lib.Observation, Epsilon],
+    networks_lib.Action,
+]
+EpsilonSampleFn = Callable[
+    [networks_lib.NetworkOutput, types.PRNGKey, Epsilon], networks_lib.Action
+]
 EpsilonLogProbFn = Callable[
-    [networks_lib.NetworkOutput, networks_lib.Action, Epsilon],
-    networks_lib.LogProb]
+    [networks_lib.NetworkOutput, networks_lib.Action, Epsilon], networks_lib.LogProb
+]
 
 
-def default_sample_fn(action_values: networks_lib.NetworkOutput,
-                      key: types.PRNGKey,
-                      epsilon: Epsilon) -> networks_lib.Action:
-  return rlax.epsilon_greedy(epsilon).sample(key, action_values)
+def default_sample_fn(
+    action_values: networks_lib.NetworkOutput, key: types.PRNGKey, epsilon: Epsilon
+) -> networks_lib.Action:
+    return rlax.epsilon_greedy(epsilon).sample(key, action_values)
 
 
 @dataclasses.dataclass
 class DQNNetworks:
-  """The network and pure functions for the DQN agent.
+    """The network and pure functions for the DQN agent.
 
-  Attributes:
-    policy_network: The policy network.
-    sample_fn: A pure function. Samples an action based on the network output.
-    log_prob: A pure function. Computes log-probability for an action.
-  """
-  policy_network: networks_lib.TypedFeedForwardNetwork
-  sample_fn: EpsilonSampleFn = default_sample_fn
-  log_prob: Optional[EpsilonLogProbFn] = None
+    Attributes:
+      policy_network: The policy network.
+      sample_fn: A pure function. Samples an action based on the network output.
+      log_prob: A pure function. Computes log-probability for an action.
+    """
+
+    policy_network: networks_lib.TypedFeedForwardNetwork
+    sample_fn: EpsilonSampleFn = default_sample_fn
+    log_prob: Optional[EpsilonLogProbFn] = None

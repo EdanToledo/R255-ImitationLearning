@@ -51,7 +51,11 @@ flags.DEFINE_float(
 )
 # Environment flags.
 flags.DEFINE_string("env_name", "HalfCheetah-v2", "What environment to run")
-flags.DEFINE_integer("num_demonstrations", 11, "Number of demonstration trajectories. If None, loads the full dataset.")
+flags.DEFINE_integer(
+    "num_demonstrations",
+    11,
+    "Number of demonstration trajectories. If None, loads the full dataset.",
+)
 
 FLAGS = flags.FLAGS
 
@@ -63,7 +67,7 @@ def main(_):
     # Create an environment and grab the spec.
     environment = helpers.make_environment(task=FLAGS.env_name)
     environment_spec = specs.make_environment_spec(environment)
-    
+
     dataset_name = helpers.get_dataset_name(FLAGS.env_name)
 
     # Get a demonstrations dataset.

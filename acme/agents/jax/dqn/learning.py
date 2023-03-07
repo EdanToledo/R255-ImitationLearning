@@ -28,44 +28,46 @@ import reverb
 
 
 class DQNLearner(learning_lib.SGDLearner):
-  """DQN learner.
+    """DQN learner.
 
-  We are in the process of migrating towards a more general SGDLearner to allow
-  for easy configuration of the loss. This is maintained now for compatibility.
-  """
+    We are in the process of migrating towards a more general SGDLearner to allow
+    for easy configuration of the loss. This is maintained now for compatibility.
+    """
 
-  def __init__(self,
-               network: networks_lib.TypedFeedForwardNetwork,
-               discount: float,
-               importance_sampling_exponent: float,
-               target_update_period: int,
-               iterator: Iterator[utils.PrefetchingSplit],
-               optimizer: optax.GradientTransformation,
-               random_key: networks_lib.PRNGKey,
-               max_abs_reward: float = 1.,
-               huber_loss_parameter: float = 1.,
-               replay_client: Optional[reverb.Client] = None,
-               replay_table_name: str = adders.DEFAULT_PRIORITY_TABLE,
-               counter: Optional[counting.Counter] = None,
-               logger: Optional[loggers.Logger] = None,
-               num_sgd_steps_per_step: int = 1):
-    """Initializes the learner."""
-    loss_fn = losses.PrioritizedDoubleQLearning(
-        discount=discount,
-        importance_sampling_exponent=importance_sampling_exponent,
-        max_abs_reward=max_abs_reward,
-        huber_loss_parameter=huber_loss_parameter,
-    )
-    super().__init__(
-        network=network,
-        loss_fn=loss_fn,
-        optimizer=optimizer,
-        data_iterator=iterator,
-        target_update_period=target_update_period,
-        random_key=random_key,
-        replay_client=replay_client,
-        replay_table_name=replay_table_name,
-        counter=counter,
-        logger=logger,
-        num_sgd_steps_per_step=num_sgd_steps_per_step,
-    )
+    def __init__(
+        self,
+        network: networks_lib.TypedFeedForwardNetwork,
+        discount: float,
+        importance_sampling_exponent: float,
+        target_update_period: int,
+        iterator: Iterator[utils.PrefetchingSplit],
+        optimizer: optax.GradientTransformation,
+        random_key: networks_lib.PRNGKey,
+        max_abs_reward: float = 1.0,
+        huber_loss_parameter: float = 1.0,
+        replay_client: Optional[reverb.Client] = None,
+        replay_table_name: str = adders.DEFAULT_PRIORITY_TABLE,
+        counter: Optional[counting.Counter] = None,
+        logger: Optional[loggers.Logger] = None,
+        num_sgd_steps_per_step: int = 1,
+    ):
+        """Initializes the learner."""
+        loss_fn = losses.PrioritizedDoubleQLearning(
+            discount=discount,
+            importance_sampling_exponent=importance_sampling_exponent,
+            max_abs_reward=max_abs_reward,
+            huber_loss_parameter=huber_loss_parameter,
+        )
+        super().__init__(
+            network=network,
+            loss_fn=loss_fn,
+            optimizer=optimizer,
+            data_iterator=iterator,
+            target_update_period=target_update_period,
+            random_key=random_key,
+            replay_client=replay_client,
+            replay_table_name=replay_table_name,
+            counter=counter,
+            logger=logger,
+            num_sgd_steps_per_step=num_sgd_steps_per_step,
+        )

@@ -26,7 +26,7 @@ import numpy as np
 # next_observation, extras).
 TEST_CASES_FOR_TRANSITION_ADDER = [
     dict(
-        testcase_name='OneStepFinalReward',
+        testcase_name="OneStepFinalReward",
         n_step=1,
         additional_discount=1.0,
         first=dm_env.restart(1),
@@ -39,24 +39,26 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             types.Transition(1, 0, 0.0, 1.0, 2),
             types.Transition(2, 0, 0.0, 1.0, 3),
             types.Transition(3, 0, 1.0, 0.0, 4),
-        )),
+        ),
+    ),
     dict(
-        testcase_name='OneStepDict',
+        testcase_name="OneStepDict",
         n_step=1,
         additional_discount=1.0,
-        first=dm_env.restart({'foo': 1}),
+        first=dm_env.restart({"foo": 1}),
         steps=(
-            (0, dm_env.transition(reward=0.0, observation={'foo': 2})),
-            (0, dm_env.transition(reward=0.0, observation={'foo': 3})),
-            (0, dm_env.termination(reward=1.0, observation={'foo': 4})),
+            (0, dm_env.transition(reward=0.0, observation={"foo": 2})),
+            (0, dm_env.transition(reward=0.0, observation={"foo": 3})),
+            (0, dm_env.termination(reward=1.0, observation={"foo": 4})),
         ),
         expected_transitions=(
-            types.Transition({'foo': 1}, 0, 0.0, 1.0, {'foo': 2}),
-            types.Transition({'foo': 2}, 0, 0.0, 1.0, {'foo': 3}),
-            types.Transition({'foo': 3}, 0, 1.0, 0.0, {'foo': 4}),
-        )),
+            types.Transition({"foo": 1}, 0, 0.0, 1.0, {"foo": 2}),
+            types.Transition({"foo": 2}, 0, 0.0, 1.0, {"foo": 3}),
+            types.Transition({"foo": 3}, 0, 1.0, 0.0, {"foo": 4}),
+        ),
+    ),
     dict(
-        testcase_name='OneStepExtras',
+        testcase_name="OneStepExtras",
         n_step=1,
         additional_discount=1.0,
         first=dm_env.restart(1),
@@ -64,32 +66,27 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             (
                 0,
                 dm_env.transition(reward=0.0, observation=2),
-                {
-                    'state': 0
-                },
+                {"state": 0},
             ),
             (
                 0,
                 dm_env.transition(reward=0.0, observation=3),
-                {
-                    'state': 1
-                },
+                {"state": 1},
             ),
             (
                 0,
                 dm_env.termination(reward=1.0, observation=4),
-                {
-                    'state': 2
-                },
+                {"state": 2},
             ),
         ),
         expected_transitions=(
-            types.Transition(1, 0, 0.0, 1.0, 2, {'state': 0}),
-            types.Transition(2, 0, 0.0, 1.0, 3, {'state': 1}),
-            types.Transition(3, 0, 1.0, 0.0, 4, {'state': 2}),
-        )),
+            types.Transition(1, 0, 0.0, 1.0, 2, {"state": 0}),
+            types.Transition(2, 0, 0.0, 1.0, 3, {"state": 1}),
+            types.Transition(3, 0, 1.0, 0.0, 4, {"state": 2}),
+        ),
+    ),
     dict(
-        testcase_name='OneStepExtrasZeroes',
+        testcase_name="OneStepExtrasZeroes",
         n_step=1,
         additional_discount=1.0,
         first=dm_env.restart(1),
@@ -114,9 +111,10 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             types.Transition(1, 0, 0.0, 1.0, 2, np.zeros(1)),
             types.Transition(2, 0, 0.0, 1.0, 3, np.zeros(1)),
             types.Transition(3, 0, 1.0, 0.0, 4, np.zeros(1)),
-        )),
+        ),
+    ),
     dict(
-        testcase_name='TwoStep',
+        testcase_name="TwoStep",
         n_step=2,
         additional_discount=1.0,
         first=dm_env.restart(1),
@@ -130,17 +128,16 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             types.Transition(1, 0, 1.5, 0.25, 3),
             types.Transition(2, 0, 1.5, 0.00, 4),
             types.Transition(3, 0, 1.0, 0.00, 4),
-        )),
+        ),
+    ),
     dict(
-        testcase_name='TwoStepStructuredReward',
+        testcase_name="TwoStepStructuredReward",
         n_step=2,
         additional_discount=1.0,
         first=dm_env.restart(1),
         steps=(
-            (0,
-             dm_env.transition(reward=(1.0, 2.0), observation=2, discount=0.5)),
-            (0,
-             dm_env.transition(reward=(1.0, 2.0), observation=3, discount=0.5)),
+            (0, dm_env.transition(reward=(1.0, 2.0), observation=2, discount=0.5)),
+            (0, dm_env.transition(reward=(1.0, 2.0), observation=3, discount=0.5)),
             (0, dm_env.termination(reward=(1.0, 2.0), observation=4)),
         ),
         expected_transitions=(
@@ -148,175 +145,205 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             types.Transition(1, 0, (1.5, 3.0), (0.25, 0.25), 3),
             types.Transition(2, 0, (1.5, 3.0), (0.00, 0.00), 4),
             types.Transition(3, 0, (1.0, 2.0), (0.00, 0.00), 4),
-        )),
+        ),
+    ),
     dict(
-        testcase_name='TwoStepNDArrayReward',
+        testcase_name="TwoStepNDArrayReward",
         n_step=2,
         additional_discount=1.0,
         first=dm_env.restart(1),
         steps=(
-            (0,
-             dm_env.transition(
-                 reward=np.array((1.0, 2.0)), observation=2, discount=0.5)),
-            (0,
-             dm_env.transition(
-                 reward=np.array((1.0, 2.0)), observation=3, discount=0.5)),
+            (
+                0,
+                dm_env.transition(
+                    reward=np.array((1.0, 2.0)), observation=2, discount=0.5
+                ),
+            ),
+            (
+                0,
+                dm_env.transition(
+                    reward=np.array((1.0, 2.0)), observation=3, discount=0.5
+                ),
+            ),
             (0, dm_env.termination(reward=np.array((1.0, 2.0)), observation=4)),
         ),
         expected_transitions=(
-            types.Transition(1, 0, np.array((1.0, 2.0)), np.array((0.50, 0.50)),
-                             2),
-            types.Transition(1, 0, np.array((1.5, 3.0)), np.array((0.25, 0.25)),
-                             3),
-            types.Transition(2, 0, np.array((1.5, 3.0)), np.array((0.00, 0.00)),
-                             4),
-            types.Transition(3, 0, np.array((1.0, 2.0)), np.array((0.00, 0.00)),
-                             4),
-        )),
+            types.Transition(1, 0, np.array((1.0, 2.0)), np.array((0.50, 0.50)), 2),
+            types.Transition(1, 0, np.array((1.5, 3.0)), np.array((0.25, 0.25)), 3),
+            types.Transition(2, 0, np.array((1.5, 3.0)), np.array((0.00, 0.00)), 4),
+            types.Transition(3, 0, np.array((1.0, 2.0)), np.array((0.00, 0.00)), 4),
+        ),
+    ),
     dict(
-        testcase_name='TwoStepStructuredDiscount',
+        testcase_name="TwoStepStructuredDiscount",
         n_step=2,
         additional_discount=1.0,
         first=dm_env.restart(1),
         steps=(
-            (0,
-             dm_env.transition(
-                 reward=1.0, observation=2, discount={
-                     'a': 0.5,
-                     'b': 0.1
-                 })),
-            (0,
-             dm_env.transition(
-                 reward=1.0, observation=3, discount={
-                     'a': 0.5,
-                     'b': 0.1
-                 })),
-            (0, dm_env.termination(reward=1.0,
-                                   observation=4)._replace(discount={
-                                       'a': 0.0,
-                                       'b': 0.0
-                                   })),
+            (
+                0,
+                dm_env.transition(
+                    reward=1.0, observation=2, discount={"a": 0.5, "b": 0.1}
+                ),
+            ),
+            (
+                0,
+                dm_env.transition(
+                    reward=1.0, observation=3, discount={"a": 0.5, "b": 0.1}
+                ),
+            ),
+            (
+                0,
+                dm_env.termination(reward=1.0, observation=4)._replace(
+                    discount={"a": 0.0, "b": 0.0}
+                ),
+            ),
         ),
         expected_transitions=(
-            types.Transition(1, 0, {
-                'a': 1.0,
-                'b': 1.0
-            }, {
-                'a': 0.50,
-                'b': 0.10
-            }, 2),
-            types.Transition(1, 0, {
-                'a': 1.5,
-                'b': 1.1
-            }, {
-                'a': 0.25,
-                'b': 0.01
-            }, 3),
-            types.Transition(2, 0, {
-                'a': 1.5,
-                'b': 1.1
-            }, {
-                'a': 0.00,
-                'b': 0.00
-            }, 4),
-            types.Transition(3, 0, {
-                'a': 1.0,
-                'b': 1.0
-            }, {
-                'a': 0.00,
-                'b': 0.00
-            }, 4),
-        )),
+            types.Transition(1, 0, {"a": 1.0, "b": 1.0}, {"a": 0.50, "b": 0.10}, 2),
+            types.Transition(1, 0, {"a": 1.5, "b": 1.1}, {"a": 0.25, "b": 0.01}, 3),
+            types.Transition(2, 0, {"a": 1.5, "b": 1.1}, {"a": 0.00, "b": 0.00}, 4),
+            types.Transition(3, 0, {"a": 1.0, "b": 1.0}, {"a": 0.00, "b": 0.00}, 4),
+        ),
+    ),
     dict(
-        testcase_name='TwoStepNDArrayDiscount',
+        testcase_name="TwoStepNDArrayDiscount",
         n_step=2,
         additional_discount=1.0,
         first=dm_env.restart(1),
         steps=(
-            (0,
-             dm_env.transition(
-                 reward=1.0, observation=2, discount=np.array((0.5, 0.1)))),
-            (0,
-             dm_env.transition(
-                 reward=1.0, observation=3, discount=np.array((0.5, 0.1)))),
-            (0, dm_env.termination(
-                reward=1.0,
-                observation=4)._replace(discount=np.array((0.0, 0.0)))),
+            (
+                0,
+                dm_env.transition(
+                    reward=1.0, observation=2, discount=np.array((0.5, 0.1))
+                ),
+            ),
+            (
+                0,
+                dm_env.transition(
+                    reward=1.0, observation=3, discount=np.array((0.5, 0.1))
+                ),
+            ),
+            (
+                0,
+                dm_env.termination(reward=1.0, observation=4)._replace(
+                    discount=np.array((0.0, 0.0))
+                ),
+            ),
         ),
         expected_transitions=(
-            types.Transition(1, 0, np.array((1.0, 1.0)), np.array((0.50, 0.10)),
-                             2),
-            types.Transition(1, 0, np.array((1.5, 1.1)), np.array((0.25, 0.01)),
-                             3),
-            types.Transition(2, 0, np.array((1.5, 1.1)), np.array((0.00, 0.00)),
-                             4),
-            types.Transition(3, 0, np.array((1.0, 1.0)), np.array((0.00, 0.00)),
-                             4),
-        )),
+            types.Transition(1, 0, np.array((1.0, 1.0)), np.array((0.50, 0.10)), 2),
+            types.Transition(1, 0, np.array((1.5, 1.1)), np.array((0.25, 0.01)), 3),
+            types.Transition(2, 0, np.array((1.5, 1.1)), np.array((0.00, 0.00)), 4),
+            types.Transition(3, 0, np.array((1.0, 1.0)), np.array((0.00, 0.00)), 4),
+        ),
+    ),
     dict(
-        testcase_name='TwoStepBroadcastedNDArrays',
+        testcase_name="TwoStepBroadcastedNDArrays",
         n_step=2,
         additional_discount=1.0,
         first=dm_env.restart(1),
         steps=(
-            (0,
-             dm_env.transition(
-                 reward=np.array([[1.0, 2.0]]),
-                 observation=2,
-                 discount=np.array([[0.5], [0.1]]))),
-            (0,
-             dm_env.transition(
-                 reward=np.array([[1.0, 2.0]]),
-                 observation=3,
-                 discount=np.array([[0.5], [0.1]]))),
-            (0, dm_env.termination(
-                reward=np.array([[1.0, 2.0]]),
-                observation=4)._replace(discount=np.array([[0.0], [0.0]]))),
+            (
+                0,
+                dm_env.transition(
+                    reward=np.array([[1.0, 2.0]]),
+                    observation=2,
+                    discount=np.array([[0.5], [0.1]]),
+                ),
+            ),
+            (
+                0,
+                dm_env.transition(
+                    reward=np.array([[1.0, 2.0]]),
+                    observation=3,
+                    discount=np.array([[0.5], [0.1]]),
+                ),
+            ),
+            (
+                0,
+                dm_env.termination(
+                    reward=np.array([[1.0, 2.0]]), observation=4
+                )._replace(discount=np.array([[0.0], [0.0]])),
+            ),
         ),
         expected_transitions=(
-            types.Transition(1, 0, np.array([[1.0, 2.0], [1.0, 2.0]]),
-                             np.array([[0.50], [0.10]]), 2),
-            types.Transition(1, 0, np.array([[1.5, 3.0], [1.1, 2.2]]),
-                             np.array([[0.25], [0.01]]), 3),
-            types.Transition(2, 0, np.array([[1.5, 3.0], [1.1, 2.2]]),
-                             np.array([[0.00], [0.00]]), 4),
-            types.Transition(3, 0, np.array([[1.0, 2.0], [1.0, 2.0]]),
-                             np.array([[0.00], [0.00]]), 4),
-        )),
+            types.Transition(
+                1, 0, np.array([[1.0, 2.0], [1.0, 2.0]]), np.array([[0.50], [0.10]]), 2
+            ),
+            types.Transition(
+                1, 0, np.array([[1.5, 3.0], [1.1, 2.2]]), np.array([[0.25], [0.01]]), 3
+            ),
+            types.Transition(
+                2, 0, np.array([[1.5, 3.0], [1.1, 2.2]]), np.array([[0.00], [0.00]]), 4
+            ),
+            types.Transition(
+                3, 0, np.array([[1.0, 2.0], [1.0, 2.0]]), np.array([[0.00], [0.00]]), 4
+            ),
+        ),
+    ),
     dict(
-        testcase_name='TwoStepStructuredBroadcastedNDArrays',
+        testcase_name="TwoStepStructuredBroadcastedNDArrays",
         n_step=2,
         additional_discount=1.0,
         first=dm_env.restart(1),
         steps=(
-            (0,
-             dm_env.transition(
-                 reward={'a': np.array([[1.0, 2.0]])},
-                 observation=2,
-                 discount=np.array([[0.5], [0.1]]))),
-            (0,
-             dm_env.transition(
-                 reward={'a': np.array([[1.0, 2.0]])},
-                 observation=3,
-                 discount=np.array([[0.5], [0.1]]))),
-            (0,
-             dm_env.termination(
-                 reward={
-                     'a': np.array([[1.0, 2.0]])
-                 }, observation=4)._replace(discount=np.array([[0.0], [0.0]]))),
+            (
+                0,
+                dm_env.transition(
+                    reward={"a": np.array([[1.0, 2.0]])},
+                    observation=2,
+                    discount=np.array([[0.5], [0.1]]),
+                ),
+            ),
+            (
+                0,
+                dm_env.transition(
+                    reward={"a": np.array([[1.0, 2.0]])},
+                    observation=3,
+                    discount=np.array([[0.5], [0.1]]),
+                ),
+            ),
+            (
+                0,
+                dm_env.termination(
+                    reward={"a": np.array([[1.0, 2.0]])}, observation=4
+                )._replace(discount=np.array([[0.0], [0.0]])),
+            ),
         ),
         expected_transitions=(
-            types.Transition(1, 0, {'a': np.array([[1.0, 2.0], [1.0, 2.0]])},
-                             {'a': np.array([[0.50], [0.10]])}, 2),
-            types.Transition(1, 0, {'a': np.array([[1.5, 3.0], [1.1, 2.2]])},
-                             {'a': np.array([[0.25], [0.01]])}, 3),
-            types.Transition(2, 0, {'a': np.array([[1.5, 3.0], [1.1, 2.2]])},
-                             {'a': np.array([[0.00], [0.00]])}, 4),
-            types.Transition(3, 0, {'a': np.array([[1.0, 2.0], [1.0, 2.0]])},
-                             {'a': np.array([[0.00], [0.00]])}, 4),
-        )),
+            types.Transition(
+                1,
+                0,
+                {"a": np.array([[1.0, 2.0], [1.0, 2.0]])},
+                {"a": np.array([[0.50], [0.10]])},
+                2,
+            ),
+            types.Transition(
+                1,
+                0,
+                {"a": np.array([[1.5, 3.0], [1.1, 2.2]])},
+                {"a": np.array([[0.25], [0.01]])},
+                3,
+            ),
+            types.Transition(
+                2,
+                0,
+                {"a": np.array([[1.5, 3.0], [1.1, 2.2]])},
+                {"a": np.array([[0.00], [0.00]])},
+                4,
+            ),
+            types.Transition(
+                3,
+                0,
+                {"a": np.array([[1.0, 2.0], [1.0, 2.0]])},
+                {"a": np.array([[0.00], [0.00]])},
+                4,
+            ),
+        ),
+    ),
     dict(
-        testcase_name='TwoStepWithExtras',
+        testcase_name="TwoStepWithExtras",
         n_step=2,
         additional_discount=1.0,
         first=dm_env.restart(1),
@@ -324,33 +351,28 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             (
                 0,
                 dm_env.transition(reward=1.0, observation=2, discount=0.5),
-                {
-                    'state': 0
-                },
+                {"state": 0},
             ),
             (
                 0,
                 dm_env.transition(reward=1.0, observation=3, discount=0.5),
-                {
-                    'state': 1
-                },
+                {"state": 1},
             ),
             (
                 0,
                 dm_env.termination(reward=1.0, observation=4),
-                {
-                    'state': 2
-                },
+                {"state": 2},
             ),
         ),
         expected_transitions=(
-            types.Transition(1, 0, 1.0, 0.50, 2, {'state': 0}),
-            types.Transition(1, 0, 1.5, 0.25, 3, {'state': 0}),
-            types.Transition(2, 0, 1.5, 0.00, 4, {'state': 1}),
-            types.Transition(3, 0, 1.0, 0.00, 4, {'state': 2}),
-        )),
+            types.Transition(1, 0, 1.0, 0.50, 2, {"state": 0}),
+            types.Transition(1, 0, 1.5, 0.25, 3, {"state": 0}),
+            types.Transition(2, 0, 1.5, 0.00, 4, {"state": 1}),
+            types.Transition(3, 0, 1.0, 0.00, 4, {"state": 2}),
+        ),
+    ),
     dict(
-        testcase_name='ThreeStepDiscounted',
+        testcase_name="ThreeStepDiscounted",
         n_step=3,
         additional_discount=0.4,
         first=dm_env.restart(1),
@@ -365,9 +387,10 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             types.Transition(1, 0, 1.24, 0.0, 4),
             types.Transition(2, 0, 1.20, 0.0, 4),
             types.Transition(3, 0, 1.00, 0.0, 4),
-        )),
+        ),
+    ),
     dict(
-        testcase_name='ThreeStepVaryingReward',
+        testcase_name="ThreeStepVaryingReward",
         n_step=3,
         additional_discount=0.5,
         first=dm_env.restart(1),
@@ -384,16 +407,18 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             types.Transition(2, 0, 3 + 0.5 * 5 + 0.25 * 7, 0.00, 5),
             types.Transition(3, 0, 5 + 0.5 * 7, 0.00, 5),
             types.Transition(4, 0, 7, 0.00, 5),
-        )),
+        ),
+    ),
     dict(
-        testcase_name='SingleTransitionEpisode',
+        testcase_name="SingleTransitionEpisode",
         n_step=4,
         additional_discount=1.0,
         first=dm_env.restart(1),
         steps=((0, dm_env.termination(reward=1.0, observation=2)),),
-        expected_transitions=(types.Transition(1, 0, 1.00, 0.0, 2),)),
+        expected_transitions=(types.Transition(1, 0, 1.00, 0.0, 2),),
+    ),
     dict(
-        testcase_name='EpisodeShorterThanN',
+        testcase_name="EpisodeShorterThanN",
         n_step=4,
         additional_discount=1.0,
         first=dm_env.restart(1),
@@ -405,9 +430,10 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             types.Transition(1, 0, 1.00, 1.0, 2),
             types.Transition(1, 0, 2.00, 0.0, 3),
             types.Transition(2, 0, 1.00, 0.0, 3),
-        )),
+        ),
+    ),
     dict(
-        testcase_name='EpisodeEqualToN',
+        testcase_name="EpisodeEqualToN",
         n_step=3,
         additional_discount=1.0,
         first=dm_env.restart(1),
@@ -419,12 +445,13 @@ TEST_CASES_FOR_TRANSITION_ADDER = [
             types.Transition(1, 0, 1.00, 1.0, 2),
             types.Transition(1, 0, 2.00, 0.0, 3),
             types.Transition(2, 0, 1.00, 0.0, 3),
-        )),
+        ),
+    ),
 ]
 
 BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
     dict(
-        testcase_name='PeriodOne',
+        testcase_name="PeriodOne",
         sequence_length=3,
         period=1,
         first=dm_env.restart(1),
@@ -455,7 +482,7 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
         end_behavior=sequence_adder.EndBehavior.ZERO_PAD,
     ),
     dict(
-        testcase_name='PeriodTwo',
+        testcase_name="PeriodTwo",
         sequence_length=3,
         period=2,
         first=dm_env.restart(1),
@@ -481,7 +508,7 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
         end_behavior=sequence_adder.EndBehavior.ZERO_PAD,
     ),
     dict(
-        testcase_name='EarlyTerminationPeriodOne',
+        testcase_name="EarlyTerminationPeriodOne",
         sequence_length=3,
         period=1,
         first=dm_env.restart(1),
@@ -495,11 +522,12 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
                 (1, 0, 2.0, 1.0, True, ()),
                 (2, 0, 3.0, 0.0, False, ()),
                 (3, 0, 0.0, 0.0, False, ()),
-            ],),
+            ],
+        ),
         end_behavior=sequence_adder.EndBehavior.ZERO_PAD,
     ),
     dict(
-        testcase_name='EarlyTerminationPeriodTwo',
+        testcase_name="EarlyTerminationPeriodTwo",
         sequence_length=3,
         period=2,
         first=dm_env.restart(1),
@@ -513,11 +541,12 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
                 (1, 0, 2.0, 1.0, True, ()),
                 (2, 0, 3.0, 0.0, False, ()),
                 (3, 0, 0.0, 0.0, False, ()),
-            ],),
+            ],
+        ),
         end_behavior=sequence_adder.EndBehavior.ZERO_PAD,
     ),
     dict(
-        testcase_name='EarlyTerminationPaddingPeriodOne',
+        testcase_name="EarlyTerminationPaddingPeriodOne",
         sequence_length=4,
         period=1,
         first=dm_env.restart(1),
@@ -532,11 +561,12 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
                 (2, 0, 3.0, 0.0, False, ()),
                 (3, 0, 0.0, 0.0, False, ()),
                 (0, 0, 0.0, 0.0, False, ()),
-            ],),
+            ],
+        ),
         end_behavior=sequence_adder.EndBehavior.ZERO_PAD,
     ),
     dict(
-        testcase_name='EarlyTerminationPaddingPeriodTwo',
+        testcase_name="EarlyTerminationPaddingPeriodTwo",
         sequence_length=4,
         period=2,
         first=dm_env.restart(1),
@@ -551,11 +581,12 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
                 (2, 0, 3.0, 0.0, False, ()),
                 (3, 0, 0.0, 0.0, False, ()),
                 (0, 0, 0.0, 0.0, False, ()),
-            ],),
+            ],
+        ),
         end_behavior=sequence_adder.EndBehavior.ZERO_PAD,
     ),
     dict(
-        testcase_name='EarlyTerminationNoPadding',
+        testcase_name="EarlyTerminationNoPadding",
         sequence_length=4,
         period=1,
         first=dm_env.restart(1),
@@ -569,11 +600,12 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
                 (1, 0, 2.0, 1.0, True, ()),
                 (2, 0, 3.0, 0.0, False, ()),
                 (3, 0, 0.0, 0.0, False, ()),
-            ],),
+            ],
+        ),
         end_behavior=sequence_adder.EndBehavior.TRUNCATE,
     ),
     dict(
-        testcase_name='LongEpisodePadding',
+        testcase_name="LongEpisodePadding",
         sequence_length=3,
         period=3,
         first=dm_env.restart(1),
@@ -607,7 +639,7 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
         end_behavior=sequence_adder.EndBehavior.ZERO_PAD,
     ),
     dict(
-        testcase_name='LongEpisodeNoPadding',
+        testcase_name="LongEpisodeNoPadding",
         sequence_length=3,
         period=3,
         first=dm_env.restart(1),
@@ -640,7 +672,7 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
         end_behavior=sequence_adder.EndBehavior.TRUNCATE,
     ),
     dict(
-        testcase_name='EndBehavior_WRITE',
+        testcase_name="EndBehavior_WRITE",
         sequence_length=3,
         period=2,
         first=dm_env.restart(1),
@@ -675,7 +707,7 @@ BASE_TEST_CASES_FOR_SEQUENCE_ADDER = [
 
 TEST_CASES_FOR_SEQUENCE_ADDER = BASE_TEST_CASES_FOR_SEQUENCE_ADDER + [
     dict(
-        testcase_name='NonBreakingSequenceOnEpisodeReset',
+        testcase_name="NonBreakingSequenceOnEpisodeReset",
         sequence_length=3,
         period=2,
         first=dm_env.restart(1),
@@ -707,9 +739,10 @@ TEST_CASES_FOR_SEQUENCE_ADDER = BASE_TEST_CASES_FOR_SEQUENCE_ADDER + [
             ],
         ),
         end_behavior=sequence_adder.EndBehavior.CONTINUE,
-        repeat_episode_times=1),
+        repeat_episode_times=1,
+    ),
     dict(
-        testcase_name='NonBreakingSequenceMultipleTerminatedEpisodes',
+        testcase_name="NonBreakingSequenceMultipleTerminatedEpisodes",
         sequence_length=3,
         period=2,
         first=dm_env.restart(1),
@@ -775,9 +808,10 @@ TEST_CASES_FOR_SEQUENCE_ADDER = BASE_TEST_CASES_FOR_SEQUENCE_ADDER + [
             ],
         ),
         end_behavior=sequence_adder.EndBehavior.CONTINUE,
-        repeat_episode_times=3),
+        repeat_episode_times=3,
+    ),
     dict(
-        testcase_name='NonBreakingSequenceMultipleTruncatedEpisodes',
+        testcase_name="NonBreakingSequenceMultipleTruncatedEpisodes",
         sequence_length=3,
         period=2,
         first=dm_env.restart(1),
@@ -843,5 +877,6 @@ TEST_CASES_FOR_SEQUENCE_ADDER = BASE_TEST_CASES_FOR_SEQUENCE_ADDER + [
             ],
         ),
         end_behavior=sequence_adder.EndBehavior.CONTINUE,
-        repeat_episode_times=3),
+        repeat_episode_times=3,
+    ),
 ]

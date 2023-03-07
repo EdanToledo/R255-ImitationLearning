@@ -51,7 +51,7 @@ def build_experiment_config():
         normalize_advantage=True,
         normalize_value=True,
         obs_normalization_fns_factory=ppo.build_mean_std_normalizer,
-        learning_rate=5e-4
+        learning_rate=5e-4,
     )
     ppo_builder = ppo.PPOBuilder(config)
 
@@ -62,7 +62,9 @@ def build_experiment_config():
         network_factory=lambda spec: ppo.make_networks(spec, layer_sizes),
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
-        logger_factory=functools.partial(make_experiment_logger, directory="~/acme/PPO")
+        logger_factory=functools.partial(
+            make_experiment_logger, directory="~/acme/PPO"
+        ),
     )
 
 

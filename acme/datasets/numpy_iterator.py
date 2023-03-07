@@ -22,27 +22,28 @@ import tree
 
 
 class NumpyIterator(Iterator[types.NestedArray]):
-  """Iterator over a dataset with elements converted to numpy.
+    """Iterator over a dataset with elements converted to numpy.
 
-  Note: This iterator returns read-only numpy arrays.
+    Note: This iterator returns read-only numpy arrays.
 
-  This iterator (compared to `tf.data.Dataset.as_numpy_iterator()`) does not
-  copy the data when comverting `tf.Tensor`s to `np.ndarray`s.
+    This iterator (compared to `tf.data.Dataset.as_numpy_iterator()`) does not
+    copy the data when comverting `tf.Tensor`s to `np.ndarray`s.
 
-  TODO(b/178684359): Remove this when it is upstreamed into `tf.data`.
-  """
+    TODO(b/178684359): Remove this when it is upstreamed into `tf.data`.
+    """
 
-  __slots__ = ['_iterator']
+    __slots__ = ["_iterator"]
 
-  def __init__(self, dataset):
-    self._iterator: Iterator[types.NestedTensor] = iter(dataset)
+    def __init__(self, dataset):
+        self._iterator: Iterator[types.NestedTensor] = iter(dataset)
 
-  def __iter__(self) -> 'NumpyIterator':
-    return self
+    def __iter__(self) -> "NumpyIterator":
+        return self
 
-  def __next__(self) -> types.NestedArray:
-    return tree.map_structure(lambda t: np.asarray(memoryview(t)),
-                              next(self._iterator))
+    def __next__(self) -> types.NestedArray:
+        return tree.map_structure(
+            lambda t: np.asarray(memoryview(t)), next(self._iterator)
+        )
 
-  def next(self):
-    return self.__next__()
+    def next(self):
+        return self.__next__()

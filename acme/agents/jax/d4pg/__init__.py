@@ -21,4 +21,3 @@ from acme.agents.jax.d4pg.networks import D4PGNetworks
 from acme.agents.jax.d4pg.networks import get_default_behavior_policy
 from acme.agents.jax.d4pg.networks import get_default_eval_policy
 from acme.agents.jax.d4pg.networks import make_networks
-

@@ -44,6 +44,7 @@ flags.DEFINE_integer(
     "num_distributed_actors", 4, "Number of actors to use in the distributed setting."
 )
 
+
 def build_experiment_config():
     """Builds SAC experiment config which can be executed in different ways."""
     # Create an environment, grab the spec, and use it to create networks.
@@ -57,7 +58,7 @@ def build_experiment_config():
         target_entropy=sac.target_entropy_from_env_spec(environment_spec),
         min_replay_size=1,
         samples_per_insert_tolerance_rate=2.0,
-        learning_rate=5e-4
+        learning_rate=5e-4,
     )
     sac_builder = builder.SACBuilder(config)
 
@@ -67,7 +68,9 @@ def build_experiment_config():
         network_factory=sac.make_networks,
         seed=FLAGS.seed,
         max_num_actor_steps=FLAGS.num_steps,
-        logger_factory=functools.partial(make_experiment_logger, directory=f"./experiments/SAC_seed_{FLAGS.seed}")
+        logger_factory=functools.partial(
+            make_experiment_logger, directory=f"./experiments/SAC_seed_{FLAGS.seed}"
+        ),
     )
 
 

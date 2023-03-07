@@ -101,7 +101,9 @@ def main(_):
     dataset_name = helpers.get_dataset_name(FLAGS.env_name)
 
     # Get a demonstrations dataset with next_actions extra.
-    transitions = tfds.get_tfds_dataset(dataset_name, FLAGS.num_demonstrations, env_spec=environment_spec)
+    transitions = tfds.get_tfds_dataset(
+        dataset_name, FLAGS.num_demonstrations, env_spec=environment_spec
+    )
     double_transitions = rlds.transformations.batch(
         transitions, size=2, shift=1, drop_remainder=True
     )

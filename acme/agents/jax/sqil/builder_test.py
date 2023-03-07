@@ -23,22 +23,23 @@ from absl.testing import absltest
 
 
 class BuilderTest(absltest.TestCase):
+    def test_sqil_iterator(self):
+        demonstrations = [types.Transition(np.array([[1], [2], [3]]), (), (), (), ())]
+        replay = [
+            reverb.ReplaySample(
+                info=(),
+                data=types.Transition(np.array([[4], [5], [6]]), (), (), (), ()),
+            )
+        ]
+        sqil_it = builder._generate_sqil_samples(iter(demonstrations), iter(replay))
+        np.testing.assert_array_equal(
+            next(sqil_it).data.observation, np.array([[1], [3], [5]])
+        )
+        np.testing.assert_array_equal(
+            next(sqil_it).data.observation, np.array([[2], [4], [6]])
+        )
+        self.assertRaises(StopIteration, lambda: next(sqil_it))
 
-  def test_sqil_iterator(self):
-    demonstrations = [
-        types.Transition(np.array([[1], [2], [3]]), (), (), (), ())
-    ]
-    replay = [
-        reverb.ReplaySample(
-            info=(),
-            data=types.Transition(np.array([[4], [5], [6]]), (), (), (), ()))
-    ]
-    sqil_it = builder._generate_sqil_samples(iter(demonstrations), iter(replay))
-    np.testing.assert_array_equal(
-        next(sqil_it).data.observation, np.array([[1], [3], [5]]))
-    np.testing.assert_array_equal(
-        next(sqil_it).data.observation, np.array([[2], [4], [6]]))
-    self.assertRaises(StopIteration, lambda: next(sqil_it))
 
-if __name__ == '__main__':
-  absltest.main()
+if __name__ == "__main__":
+    absltest.main()

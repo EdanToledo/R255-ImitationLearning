@@ -27,75 +27,73 @@ from absl.testing import absltest
 
 
 class ImpalaTest(absltest.TestCase):
+    def test_shapes(self):
+        #
+        batch_size = 2
+        sequence_len = 3
+        num_actions = 5
+        hidden_size = 7
 
-  def test_shapes(self):
+        # Define a trivial recurrent actor-critic network.
+        @hk.without_apply_rng
+        @hk.transform
+        def unroll_fn_transformed(observations, state):
+            lstm = hk.LSTM(hidden_size)
+            embedding, state = hk.dynamic_unroll(lstm, observations, state)
+            logits = hk.Linear(num_actions)(embedding)
+            values = jnp.squeeze(hk.Linear(1)(embedding), axis=-1)
 
-    #
-    batch_size = 2
-    sequence_len = 3
-    num_actions = 5
-    hidden_size = 7
+            return (logits, values), state
 
-    # Define a trivial recurrent actor-critic network.
-    @hk.without_apply_rng
-    @hk.transform
-    def unroll_fn_transformed(observations, state):
-      lstm = hk.LSTM(hidden_size)
-      embedding, state = hk.dynamic_unroll(lstm, observations, state)
-      logits = hk.Linear(num_actions)(embedding)
-      values = jnp.squeeze(hk.Linear(1)(embedding), axis=-1)
+        @hk.without_apply_rng
+        @hk.transform
+        def initial_state_fn():
+            return hk.LSTM(hidden_size).initial_state(None)
 
-      return (logits, values), state
+        # Initial recurrent network state.
+        initial_state = initial_state_fn.apply(None)
 
-    @hk.without_apply_rng
-    @hk.transform
-    def initial_state_fn():
-      return hk.LSTM(hidden_size).initial_state(None)
+        # Make some fake data.
+        observations = np.ones(shape=(sequence_len, 50))
+        actions = np.random.randint(num_actions, size=sequence_len)
+        rewards = np.random.rand(sequence_len)
+        discounts = np.ones(shape=(sequence_len,))
 
-    # Initial recurrent network state.
-    initial_state = initial_state_fn.apply(None)
+        batch_tile = tree_map(lambda x: np.tile(x, [batch_size, *([1] * x.ndim)]))
+        seq_tile = tree_map(lambda x: np.tile(x, [sequence_len, *([1] * x.ndim)]))
 
-    # Make some fake data.
-    observations = np.ones(shape=(sequence_len, 50))
-    actions = np.random.randint(num_actions, size=sequence_len)
-    rewards = np.random.rand(sequence_len)
-    discounts = np.ones(shape=(sequence_len,))
+        extras = {
+            "logits": np.random.rand(sequence_len, num_actions),
+            "core_state": seq_tile(initial_state),
+        }
 
-    batch_tile = tree_map(lambda x: np.tile(x, [batch_size, *([1] * x.ndim)]))
-    seq_tile = tree_map(lambda x: np.tile(x, [sequence_len, *([1] * x.ndim)]))
+        # Package up the data into a ReverbSample.
+        data = adders.Step(
+            observations,
+            actions,
+            rewards,
+            discounts,
+            extras=extras,
+            start_of_episode=(),
+        )
+        data = batch_tile(data)
+        sample = reverb.ReplaySample(info=None, data=data)
 
-    extras = {
-        'logits': np.random.rand(sequence_len, num_actions),
-        'core_state': seq_tile(initial_state),
-    }
+        # Initialise parameters.
+        rng = hk.PRNGSequence(1)
+        params = unroll_fn_transformed.init(next(rng), observations, initial_state)
 
-    # Package up the data into a ReverbSample.
-    data = adders.Step(
-        observations,
-        actions,
-        rewards,
-        discounts,
-        extras=extras,
-        start_of_episode=())
-    data = batch_tile(data)
-    sample = reverb.ReplaySample(info=None, data=data)
+        # Make loss function.
+        loss_fn = impala.impala_loss(unroll_fn_transformed.apply, discount=0.99)
 
-    # Initialise parameters.
-    rng = hk.PRNGSequence(1)
-    params = unroll_fn_transformed.init(next(rng), observations, initial_state)
-
-    # Make loss function.
-    loss_fn = impala.impala_loss(
-        unroll_fn_transformed.apply, discount=0.99)
-
-    # Return value should be scalar.
-    loss, metrics = loss_fn(params, sample)
-    loss = jax.device_get(loss)
-    self.assertEqual(loss.shape, ())
-    for value in metrics.values():
-      value = jax.device_get(value)
-      self.assertEqual(value.shape, ())
+        # Return value should be scalar.
+        loss, metrics = loss_fn(params, sample)
+        loss = jax.device_get(loss)
+        self.assertEqual(loss.shape, ())
+        for value in metrics.values():
+            value = jax.device_get(value)
+            self.assertEqual(value.shape, ())
 
 
-if __name__ == '__main__':
-  absltest.main()
+if __name__ == "__main__":
+    absltest.main()

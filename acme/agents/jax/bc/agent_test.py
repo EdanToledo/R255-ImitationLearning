@@ -34,158 +34,167 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 
-def make_networks(spec: specs.EnvironmentSpec,
-                  discrete_actions: bool = False) -> bc.BCNetworks:
-  """Creates networks used by the agent."""
+def make_networks(
+    spec: specs.EnvironmentSpec, discrete_actions: bool = False
+) -> bc.BCNetworks:
+    """Creates networks used by the agent."""
 
-  if discrete_actions:
-    final_layer_size = spec.actions.num_values
-  else:
-    final_layer_size = np.prod(spec.actions.shape, dtype=int)
-
-  def _actor_fn(obs, is_training=False, key=None):
-    # is_training and key allows to defined train/test dependant modules
-    # like dropout.
-    del is_training
-    del key
     if discrete_actions:
-      network = hk.nets.MLP([64, 64, final_layer_size])
+        final_layer_size = spec.actions.num_values
     else:
-      network = hk.Sequential([
-          networks_lib.LayerNormMLP([64, 64], activate_final=True),
-          networks_lib.NormalTanhDistribution(final_layer_size),
-      ])
-    return network(obs)
+        final_layer_size = np.prod(spec.actions.shape, dtype=int)
 
-  policy = hk.without_apply_rng(hk.transform(_actor_fn))
+    def _actor_fn(obs, is_training=False, key=None):
+        # is_training and key allows to defined train/test dependant modules
+        # like dropout.
+        del is_training
+        del key
+        if discrete_actions:
+            network = hk.nets.MLP([64, 64, final_layer_size])
+        else:
+            network = hk.Sequential(
+                [
+                    networks_lib.LayerNormMLP([64, 64], activate_final=True),
+                    networks_lib.NormalTanhDistribution(final_layer_size),
+                ]
+            )
+        return network(obs)
 
-  # Create dummy observations and actions to create network parameters.
-  dummy_obs = utils.zeros_like(spec.observations)
-  dummy_obs = utils.add_batch_dim(dummy_obs)
-  policy_network = networks_lib.FeedForwardNetwork(
-      lambda key: policy.init(key, dummy_obs), policy.apply)
-  bc_policy_network = bc.convert_to_bc_network(policy_network)
+    policy = hk.without_apply_rng(hk.transform(_actor_fn))
 
-  if discrete_actions:
+    # Create dummy observations and actions to create network parameters.
+    dummy_obs = utils.zeros_like(spec.observations)
+    dummy_obs = utils.add_batch_dim(dummy_obs)
+    policy_network = networks_lib.FeedForwardNetwork(
+        lambda key: policy.init(key, dummy_obs), policy.apply
+    )
+    bc_policy_network = bc.convert_to_bc_network(policy_network)
 
-    def sample_fn(logits: networks_lib.NetworkOutput,
-                  key: jax_types.PRNGKey) -> networks_lib.Action:
-      return rlax.epsilon_greedy(epsilon=0.0).sample(key, logits)
+    if discrete_actions:
 
-    def log_prob(logits: networks_lib.NetworkOutput,
-                 actions: networks_lib.Action) -> networks_lib.LogProb:
-      max_logits = jnp.max(logits, axis=-1, keepdims=True)
-      logits = logits - max_logits
-      logits_actions = jnp.sum(
-          jax.nn.one_hot(actions, spec.actions.num_values) * logits, axis=-1)
+        def sample_fn(
+            logits: networks_lib.NetworkOutput, key: jax_types.PRNGKey
+        ) -> networks_lib.Action:
+            return rlax.epsilon_greedy(epsilon=0.0).sample(key, logits)
 
-      log_prob = logits_actions - special.logsumexp(logits, axis=-1)
-      return log_prob
+        def log_prob(
+            logits: networks_lib.NetworkOutput, actions: networks_lib.Action
+        ) -> networks_lib.LogProb:
+            max_logits = jnp.max(logits, axis=-1, keepdims=True)
+            logits = logits - max_logits
+            logits_actions = jnp.sum(
+                jax.nn.one_hot(actions, spec.actions.num_values) * logits, axis=-1
+            )
 
-  else:
+            log_prob = logits_actions - special.logsumexp(logits, axis=-1)
+            return log_prob
 
-    def sample_fn(distribution: networks_lib.NetworkOutput,
-                  key: jax_types.PRNGKey) -> networks_lib.Action:
-      return distribution.sample(seed=key)
+    else:
 
-    def log_prob(distribuition: networks_lib.NetworkOutput,
-                 actions: networks_lib.Action) -> networks_lib.LogProb:
-      return distribuition.log_prob(actions)
+        def sample_fn(
+            distribution: networks_lib.NetworkOutput, key: jax_types.PRNGKey
+        ) -> networks_lib.Action:
+            return distribution.sample(seed=key)
 
-  return bc.BCNetworks(bc_policy_network, sample_fn, log_prob)
+        def log_prob(
+            distribuition: networks_lib.NetworkOutput, actions: networks_lib.Action
+        ) -> networks_lib.LogProb:
+            return distribuition.log_prob(actions)
+
+    return bc.BCNetworks(bc_policy_network, sample_fn, log_prob)
 
 
 class BCTest(parameterized.TestCase):
+    @parameterized.parameters(("logp",), ("mse",), ("peerbc",))
+    def test_continuous_actions(self, loss_name):
+        with chex.fake_pmap_and_jit():
+            num_sgd_steps_per_step = 1
+            num_steps = 5
 
-  @parameterized.parameters(
-      ('logp',),
-      ('mse',),
-      ('peerbc',)
-      )
-  def test_continuous_actions(self, loss_name):
-    with chex.fake_pmap_and_jit():
-      num_sgd_steps_per_step = 1
-      num_steps = 5
+            # Create a fake environment to test with.
+            environment = fakes.ContinuousEnvironment(
+                episode_length=10, bounded=True, action_dim=6
+            )
 
-      # Create a fake environment to test with.
-      environment = fakes.ContinuousEnvironment(
-          episode_length=10, bounded=True, action_dim=6)
+            spec = specs.make_environment_spec(environment)
+            dataset_demonstration = fakes.transition_dataset(environment)
+            dataset_demonstration = dataset_demonstration.map(
+                lambda sample: types.Transition(*sample.data)
+            )
+            dataset_demonstration = dataset_demonstration.batch(8).as_numpy_iterator()
 
-      spec = specs.make_environment_spec(environment)
-      dataset_demonstration = fakes.transition_dataset(environment)
-      dataset_demonstration = dataset_demonstration.map(
-          lambda sample: types.Transition(*sample.data))
-      dataset_demonstration = dataset_demonstration.batch(8).as_numpy_iterator()
+            # Construct the agent.
+            networks = make_networks(spec)
 
-      # Construct the agent.
-      networks = make_networks(spec)
+            if loss_name == "logp":
+                loss_fn = bc.logp()
+            elif loss_name == "mse":
+                loss_fn = bc.mse()
+            elif loss_name == "peerbc":
+                loss_fn = bc.peerbc(bc.logp(), zeta=0.1)
+            else:
+                raise ValueError
 
-      if loss_name == 'logp':
-        loss_fn = bc.logp()
-      elif loss_name == 'mse':
-        loss_fn = bc.mse()
-      elif loss_name == 'peerbc':
-        loss_fn = bc.peerbc(bc.logp(), zeta=0.1)
-      else:
-        raise ValueError
+            learner = bc.BCLearner(
+                networks=networks,
+                random_key=jax.random.PRNGKey(0),
+                loss_fn=loss_fn,
+                optimizer=optax.adam(0.01),
+                prefetching_iterator=utils.sharded_prefetch(dataset_demonstration),
+                num_sgd_steps_per_step=num_sgd_steps_per_step,
+            )
 
-      learner = bc.BCLearner(
-          networks=networks,
-          random_key=jax.random.PRNGKey(0),
-          loss_fn=loss_fn,
-          optimizer=optax.adam(0.01),
-          prefetching_iterator=utils.sharded_prefetch(dataset_demonstration),
-          num_sgd_steps_per_step=num_sgd_steps_per_step)
+            # Train the agent
+            for _ in range(num_steps):
+                learner.step()
 
-      # Train the agent
-      for _ in range(num_steps):
-        learner.step()
+    @parameterized.parameters(("logp",), ("rcal",))
+    def test_discrete_actions(self, loss_name):
+        with chex.fake_pmap_and_jit():
+            num_sgd_steps_per_step = 1
+            num_steps = 5
 
-  @parameterized.parameters(
-      ('logp',),
-      ('rcal',))
-  def test_discrete_actions(self, loss_name):
-    with chex.fake_pmap_and_jit():
+            # Create a fake environment to test with.
+            environment = fakes.DiscreteEnvironment(
+                num_actions=10,
+                num_observations=100,
+                obs_shape=(10,),
+                obs_dtype=np.float32,
+            )
 
-      num_sgd_steps_per_step = 1
-      num_steps = 5
+            spec = specs.make_environment_spec(environment)
+            dataset_demonstration = fakes.transition_dataset(environment)
+            dataset_demonstration = dataset_demonstration.map(
+                lambda sample: types.Transition(*sample.data)
+            )
+            dataset_demonstration = dataset_demonstration.batch(8).as_numpy_iterator()
 
-      # Create a fake environment to test with.
-      environment = fakes.DiscreteEnvironment(
-          num_actions=10, num_observations=100, obs_shape=(10,),
-          obs_dtype=np.float32)
+            # Construct the agent.
+            networks = make_networks(spec, discrete_actions=True)
 
-      spec = specs.make_environment_spec(environment)
-      dataset_demonstration = fakes.transition_dataset(environment)
-      dataset_demonstration = dataset_demonstration.map(
-          lambda sample: types.Transition(*sample.data))
-      dataset_demonstration = dataset_demonstration.batch(8).as_numpy_iterator()
+            if loss_name == "logp":
+                loss_fn = bc.logp()
 
-      # Construct the agent.
-      networks = make_networks(spec, discrete_actions=True)
+            elif loss_name == "rcal":
+                base_loss_fn = bc.logp()
+                loss_fn = bc.rcal(base_loss_fn, discount=0.99, alpha=0.1)
 
-      if loss_name == 'logp':
-        loss_fn = bc.logp()
+            else:
+                raise ValueError
 
-      elif loss_name == 'rcal':
-        base_loss_fn = bc.logp()
-        loss_fn = bc.rcal(base_loss_fn, discount=0.99, alpha=0.1)
+            learner = bc.BCLearner(
+                networks=networks,
+                random_key=jax.random.PRNGKey(0),
+                loss_fn=loss_fn,
+                optimizer=optax.adam(0.01),
+                prefetching_iterator=utils.sharded_prefetch(dataset_demonstration),
+                num_sgd_steps_per_step=num_sgd_steps_per_step,
+            )
 
-      else:
-        raise ValueError
-
-      learner = bc.BCLearner(
-          networks=networks,
-          random_key=jax.random.PRNGKey(0),
-          loss_fn=loss_fn,
-          optimizer=optax.adam(0.01),
-          prefetching_iterator=utils.sharded_prefetch(dataset_demonstration),
-          num_sgd_steps_per_step=num_sgd_steps_per_step)
-
-      # Train the agent
-      for _ in range(num_steps):
-        learner.step()
+            # Train the agent
+            for _ in range(num_steps):
+                learner.step()
 
 
-if __name__ == '__main__':
-  absltest.main()
+if __name__ == "__main__":
+    absltest.main()

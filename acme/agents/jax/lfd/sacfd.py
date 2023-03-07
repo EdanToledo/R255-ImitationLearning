@@ -26,22 +26,28 @@ import reverb
 
 @dataclasses.dataclass
 class SACfDConfig:
-  """Configuration options specific to SAC with demonstrations.
+    """Configuration options specific to SAC with demonstrations.
 
-  Attributes:
-    lfd_config: LfD config.
-    sac_config: SAC config.
-  """
-  lfd_config: config.LfdConfig
-  sac_config: sac.SACConfig
+    Attributes:
+      lfd_config: LfD config.
+      sac_config: SAC config.
+    """
+
+    lfd_config: config.LfdConfig
+    sac_config: sac.SACConfig
 
 
-class SACfDBuilder(builder.LfdBuilder[sac.SACNetworks,
-                                      actor_core_lib.FeedForwardPolicy,
-                                      reverb.ReplaySample]):
-  """Builder for SAC agent learning from demonstrations."""
+class SACfDBuilder(
+    builder.LfdBuilder[
+        sac.SACNetworks, actor_core_lib.FeedForwardPolicy, reverb.ReplaySample
+    ]
+):
+    """Builder for SAC agent learning from demonstrations."""
 
-  def __init__(self, sac_fd_config: SACfDConfig,
-               lfd_iterator_fn: Callable[[], Iterator[builder.LfdStep]]):
-    sac_builder = sac.SACBuilder(sac_fd_config.sac_config)
-    super().__init__(sac_builder, lfd_iterator_fn, sac_fd_config.lfd_config)
+    def __init__(
+        self,
+        sac_fd_config: SACfDConfig,
+        lfd_iterator_fn: Callable[[], Iterator[builder.LfdStep]],
+    ):
+        sac_builder = sac.SACBuilder(sac_fd_config.sac_config)
+        super().__init__(sac_builder, lfd_iterator_fn, sac_fd_config.lfd_config)

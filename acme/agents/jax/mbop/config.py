@@ -21,16 +21,17 @@ from acme.agents.jax.mbop import mppi
 
 @dataclasses.dataclass(frozen=True)
 class MBOPConfig:
-  """Configuration options for the MBOP agent.
+    """Configuration options for the MBOP agent.
 
-  Attributes:
-    mppi_config: Planner hyperparameters.
-    learning_rate: Learning rate.
-    num_networks: Number of networks in the ensembles.
-    num_sgd_steps_per_step: How many gradient updates to perform per learner
-      step.
-  """
-  mppi_config: mppi.MPPIConfig = mppi.MPPIConfig()
-  learning_rate: float = 3e-4
-  num_networks: int = 5
-  num_sgd_steps_per_step: int = 1
+    Attributes:
+      mppi_config: Planner hyperparameters.
+      learning_rate: Learning rate.
+      num_networks: Number of networks in the ensembles.
+      num_sgd_steps_per_step: How many gradient updates to perform per learner
+        step.
+    """
+
+    mppi_config: mppi.MPPIConfig = mppi.MPPIConfig()
+    learning_rate: float = 3e-4
+    num_networks: int = 5
+    num_sgd_steps_per_step: int = 1

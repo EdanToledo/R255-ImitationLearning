@@ -31,233 +31,250 @@ import optax
 
 
 class TrainingState(NamedTuple):
-  """Contains training state for the learner."""
-  policy_params: networks_lib.Params
-  target_policy_params: networks_lib.Params
-  critic_params: networks_lib.Params
-  target_critic_params: networks_lib.Params
-  policy_opt_state: optax.OptState
-  critic_opt_state: optax.OptState
-  steps: int
-  key: networks_lib.PRNGKey
+    """Contains training state for the learner."""
+
+    policy_params: networks_lib.Params
+    target_policy_params: networks_lib.Params
+    critic_params: networks_lib.Params
+    target_critic_params: networks_lib.Params
+    policy_opt_state: optax.OptState
+    critic_opt_state: optax.OptState
+    steps: int
+    key: networks_lib.PRNGKey
 
 
 class CRRLearner(acme.Learner):
-  """Critic Regularized Regression (CRR) learner.
+    """Critic Regularized Regression (CRR) learner.
 
-  This is the learning component of a CRR agent as described in
-  https://arxiv.org/abs/2006.15134.
-  """
-
-  _state: TrainingState
-
-  def __init__(self,
-               networks: CRRNetworks,
-               random_key: networks_lib.PRNGKey,
-               discount: float,
-               target_update_period: int,
-               policy_loss_coeff_fn: PolicyLossCoeff,
-               iterator: Iterator[types.Transition],
-               policy_optimizer: optax.GradientTransformation,
-               critic_optimizer: optax.GradientTransformation,
-               counter: Optional[counting.Counter] = None,
-               logger: Optional[loggers.Logger] = None,
-               grad_updates_per_batch: int = 1,
-               use_sarsa_target: bool = False):
-    """Initializes the CRR learner.
-
-    Args:
-      networks: CRR networks.
-      random_key: a key for random number generation.
-      discount: discount to use for TD updates.
-      target_update_period: period to update target's parameters.
-      policy_loss_coeff_fn: set the loss function for the policy.
-      iterator: an iterator over training data.
-      policy_optimizer: the policy optimizer.
-      critic_optimizer: the Q-function optimizer.
-      counter: counter object used to keep track of steps.
-      logger: logger object to be used by learner.
-      grad_updates_per_batch: how many gradient updates given a sampled batch.
-      use_sarsa_target: compute on-policy target using iterator's actions rather
-        than sampled actions.
-        Useful for 1-step offline RL (https://arxiv.org/pdf/2106.08909.pdf).
-        When set to `True`, `target_policy_params` are unused.
+    This is the learning component of a CRR agent as described in
+    https://arxiv.org/abs/2006.15134.
     """
 
-    critic_network = networks.critic_network
-    policy_network = networks.policy_network
+    _state: TrainingState
 
-    def policy_loss(
-        policy_params: networks_lib.Params,
-        critic_params: networks_lib.Params,
-        transition: types.Transition,
-        key: networks_lib.PRNGKey,
-    ) -> jnp.ndarray:
-      # Compute the loss coefficients.
-      coeff = policy_loss_coeff_fn(networks, policy_params, critic_params,
-                                   transition, key)
-      coeff = jax.lax.stop_gradient(coeff)
-      # Return the weighted loss.
-      dist_params = policy_network.apply(policy_params, transition.observation)
-      logp_action = networks.log_prob(dist_params, transition.action)
-      # Make sure there is no broadcasting.
-      logp_action *= coeff.flatten()
-      assert len(logp_action.shape) == 1
-      return -jnp.mean(logp_action)
-
-    def critic_loss(
-        critic_params: networks_lib.Params,
-        target_policy_params: networks_lib.Params,
-        target_critic_params: networks_lib.Params,
-        transition: types.Transition,
-        key: networks_lib.PRNGKey,
+    def __init__(
+        self,
+        networks: CRRNetworks,
+        random_key: networks_lib.PRNGKey,
+        discount: float,
+        target_update_period: int,
+        policy_loss_coeff_fn: PolicyLossCoeff,
+        iterator: Iterator[types.Transition],
+        policy_optimizer: optax.GradientTransformation,
+        critic_optimizer: optax.GradientTransformation,
+        counter: Optional[counting.Counter] = None,
+        logger: Optional[loggers.Logger] = None,
+        grad_updates_per_batch: int = 1,
+        use_sarsa_target: bool = False,
     ):
-      # Sample the next action.
-      if use_sarsa_target:
-        # TODO(b/222674779): use N-steps Trajectories to get the next actions.
-        assert 'next_action' in transition.extras, (
-            'next actions should be given as extras for one step RL.')
-        next_action = transition.extras['next_action']
-      else:
-        next_dist_params = policy_network.apply(target_policy_params,
-                                                transition.next_observation)
-        next_action = networks.sample(next_dist_params, key)
-      # Calculate the value of the next state and action.
-      next_q = critic_network.apply(target_critic_params,
-                                    transition.next_observation, next_action)
-      target_q = transition.reward + transition.discount * discount * next_q
-      target_q = jax.lax.stop_gradient(target_q)
+        """Initializes the CRR learner.
 
-      q = critic_network.apply(critic_params, transition.observation,
-                               transition.action)
-      q_error = q - target_q
-      # Loss is MSE scaled by 0.5, so the gradient is equal to the TD error.
-      # TODO(sertan): Replace with a distributional critic. CRR paper states
-      # that this may perform better.
-      return 0.5 * jnp.mean(jnp.square(q_error))
+        Args:
+          networks: CRR networks.
+          random_key: a key for random number generation.
+          discount: discount to use for TD updates.
+          target_update_period: period to update target's parameters.
+          policy_loss_coeff_fn: set the loss function for the policy.
+          iterator: an iterator over training data.
+          policy_optimizer: the policy optimizer.
+          critic_optimizer: the Q-function optimizer.
+          counter: counter object used to keep track of steps.
+          logger: logger object to be used by learner.
+          grad_updates_per_batch: how many gradient updates given a sampled batch.
+          use_sarsa_target: compute on-policy target using iterator's actions rather
+            than sampled actions.
+            Useful for 1-step offline RL (https://arxiv.org/pdf/2106.08909.pdf).
+            When set to `True`, `target_policy_params` are unused.
+        """
 
-    policy_loss_and_grad = jax.value_and_grad(policy_loss)
-    critic_loss_and_grad = jax.value_and_grad(critic_loss)
+        critic_network = networks.critic_network
+        policy_network = networks.policy_network
 
-    def sgd_step(
-        state: TrainingState,
-        transitions: types.Transition,
-    ) -> Tuple[TrainingState, Dict[str, jnp.ndarray]]:
+        def policy_loss(
+            policy_params: networks_lib.Params,
+            critic_params: networks_lib.Params,
+            transition: types.Transition,
+            key: networks_lib.PRNGKey,
+        ) -> jnp.ndarray:
+            # Compute the loss coefficients.
+            coeff = policy_loss_coeff_fn(
+                networks, policy_params, critic_params, transition, key
+            )
+            coeff = jax.lax.stop_gradient(coeff)
+            # Return the weighted loss.
+            dist_params = policy_network.apply(policy_params, transition.observation)
+            logp_action = networks.log_prob(dist_params, transition.action)
+            # Make sure there is no broadcasting.
+            logp_action *= coeff.flatten()
+            assert len(logp_action.shape) == 1
+            return -jnp.mean(logp_action)
 
-      key, key_policy, key_critic = jax.random.split(state.key, 3)
+        def critic_loss(
+            critic_params: networks_lib.Params,
+            target_policy_params: networks_lib.Params,
+            target_critic_params: networks_lib.Params,
+            transition: types.Transition,
+            key: networks_lib.PRNGKey,
+        ):
+            # Sample the next action.
+            if use_sarsa_target:
+                # TODO(b/222674779): use N-steps Trajectories to get the next actions.
+                assert (
+                    "next_action" in transition.extras
+                ), "next actions should be given as extras for one step RL."
+                next_action = transition.extras["next_action"]
+            else:
+                next_dist_params = policy_network.apply(
+                    target_policy_params, transition.next_observation
+                )
+                next_action = networks.sample(next_dist_params, key)
+            # Calculate the value of the next state and action.
+            next_q = critic_network.apply(
+                target_critic_params, transition.next_observation, next_action
+            )
+            target_q = transition.reward + transition.discount * discount * next_q
+            target_q = jax.lax.stop_gradient(target_q)
 
-      # Compute losses and their gradients.
-      policy_loss_value, policy_gradients = policy_loss_and_grad(
-          state.policy_params, state.critic_params, transitions, key_policy)
-      critic_loss_value, critic_gradients = critic_loss_and_grad(
-          state.critic_params, state.target_policy_params,
-          state.target_critic_params, transitions, key_critic)
+            q = critic_network.apply(
+                critic_params, transition.observation, transition.action
+            )
+            q_error = q - target_q
+            # Loss is MSE scaled by 0.5, so the gradient is equal to the TD error.
+            # TODO(sertan): Replace with a distributional critic. CRR paper states
+            # that this may perform better.
+            return 0.5 * jnp.mean(jnp.square(q_error))
 
-      # Get optimizer updates and state.
-      policy_updates, policy_opt_state = policy_optimizer.update(
-          policy_gradients, state.policy_opt_state)
-      critic_updates, critic_opt_state = critic_optimizer.update(
-          critic_gradients, state.critic_opt_state)
+        policy_loss_and_grad = jax.value_and_grad(policy_loss)
+        critic_loss_and_grad = jax.value_and_grad(critic_loss)
 
-      # Apply optimizer updates to parameters.
-      policy_params = optax.apply_updates(state.policy_params, policy_updates)
-      critic_params = optax.apply_updates(state.critic_params, critic_updates)
+        def sgd_step(
+            state: TrainingState,
+            transitions: types.Transition,
+        ) -> Tuple[TrainingState, Dict[str, jnp.ndarray]]:
+            key, key_policy, key_critic = jax.random.split(state.key, 3)
 
-      steps = state.steps + 1
+            # Compute losses and their gradients.
+            policy_loss_value, policy_gradients = policy_loss_and_grad(
+                state.policy_params, state.critic_params, transitions, key_policy
+            )
+            critic_loss_value, critic_gradients = critic_loss_and_grad(
+                state.critic_params,
+                state.target_policy_params,
+                state.target_critic_params,
+                transitions,
+                key_critic,
+            )
 
-      # Periodically update target networks.
-      target_policy_params, target_critic_params = optax.periodic_update(
-          (policy_params, critic_params),
-          (state.target_policy_params, state.target_critic_params), steps,
-          target_update_period)
+            # Get optimizer updates and state.
+            policy_updates, policy_opt_state = policy_optimizer.update(
+                policy_gradients, state.policy_opt_state
+            )
+            critic_updates, critic_opt_state = critic_optimizer.update(
+                critic_gradients, state.critic_opt_state
+            )
 
-      new_state = TrainingState(
-          policy_params=policy_params,
-          target_policy_params=target_policy_params,
-          critic_params=critic_params,
-          target_critic_params=target_critic_params,
-          policy_opt_state=policy_opt_state,
-          critic_opt_state=critic_opt_state,
-          steps=steps,
-          key=key,
-      )
+            # Apply optimizer updates to parameters.
+            policy_params = optax.apply_updates(state.policy_params, policy_updates)
+            critic_params = optax.apply_updates(state.critic_params, critic_updates)
 
-      metrics = {
-          'policy_loss': policy_loss_value,
-          'critic_loss': critic_loss_value,
-      }
+            steps = state.steps + 1
 
-      return new_state, metrics
+            # Periodically update target networks.
+            target_policy_params, target_critic_params = optax.periodic_update(
+                (policy_params, critic_params),
+                (state.target_policy_params, state.target_critic_params),
+                steps,
+                target_update_period,
+            )
 
-    sgd_step = utils.process_multiple_batches(sgd_step, grad_updates_per_batch)
-    self._sgd_step = jax.jit(sgd_step)
+            new_state = TrainingState(
+                policy_params=policy_params,
+                target_policy_params=target_policy_params,
+                critic_params=critic_params,
+                target_critic_params=target_critic_params,
+                policy_opt_state=policy_opt_state,
+                critic_opt_state=critic_opt_state,
+                steps=steps,
+                key=key,
+            )
 
-    # General learner book-keeping and loggers.
-    self._counter = counter or counting.Counter()
-    self._logger = logger or loggers.make_default_logger(
-        'learner',
-        asynchronous=True,
-        serialize_fn=utils.fetch_devicearray,
-        steps_key=self._counter.get_steps_key())
+            metrics = {
+                "policy_loss": policy_loss_value,
+                "critic_loss": critic_loss_value,
+            }
 
-    # Create prefetching dataset iterator.
-    self._iterator = iterator
+            return new_state, metrics
 
-    # Create the network parameters and copy into the target network parameters.
-    key, key_policy, key_critic = jax.random.split(random_key, 3)
-    initial_policy_params = policy_network.init(key_policy)
-    initial_critic_params = critic_network.init(key_critic)
-    initial_target_policy_params = initial_policy_params
-    initial_target_critic_params = initial_critic_params
+        sgd_step = utils.process_multiple_batches(sgd_step, grad_updates_per_batch)
+        self._sgd_step = jax.jit(sgd_step)
 
-    # Initialize optimizers.
-    initial_policy_opt_state = policy_optimizer.init(initial_policy_params)
-    initial_critic_opt_state = critic_optimizer.init(initial_critic_params)
+        # General learner book-keeping and loggers.
+        self._counter = counter or counting.Counter()
+        self._logger = logger or loggers.make_default_logger(
+            "learner",
+            asynchronous=True,
+            serialize_fn=utils.fetch_devicearray,
+            steps_key=self._counter.get_steps_key(),
+        )
 
-    # Create initial state.
-    self._state = TrainingState(
-        policy_params=initial_policy_params,
-        target_policy_params=initial_target_policy_params,
-        critic_params=initial_critic_params,
-        target_critic_params=initial_target_critic_params,
-        policy_opt_state=initial_policy_opt_state,
-        critic_opt_state=initial_critic_opt_state,
-        steps=0,
-        key=key,
-    )
+        # Create prefetching dataset iterator.
+        self._iterator = iterator
 
-    # Do not record timestamps until after the first learning step is done.
-    # This is to avoid including the time it takes for actors to come online and
-    # fill the replay buffer.
-    self._timestamp = None
+        # Create the network parameters and copy into the target network parameters.
+        key, key_policy, key_critic = jax.random.split(random_key, 3)
+        initial_policy_params = policy_network.init(key_policy)
+        initial_critic_params = critic_network.init(key_critic)
+        initial_target_policy_params = initial_policy_params
+        initial_target_critic_params = initial_critic_params
 
-  def step(self):
-    transitions = next(self._iterator)
+        # Initialize optimizers.
+        initial_policy_opt_state = policy_optimizer.init(initial_policy_params)
+        initial_critic_opt_state = critic_optimizer.init(initial_critic_params)
 
-    self._state, metrics = self._sgd_step(self._state, transitions)
+        # Create initial state.
+        self._state = TrainingState(
+            policy_params=initial_policy_params,
+            target_policy_params=initial_target_policy_params,
+            critic_params=initial_critic_params,
+            target_critic_params=initial_target_critic_params,
+            policy_opt_state=initial_policy_opt_state,
+            critic_opt_state=initial_critic_opt_state,
+            steps=0,
+            key=key,
+        )
 
-    # Compute elapsed time.
-    timestamp = time.time()
-    elapsed_time = timestamp - self._timestamp if self._timestamp else 0
-    self._timestamp = timestamp
+        # Do not record timestamps until after the first learning step is done.
+        # This is to avoid including the time it takes for actors to come online and
+        # fill the replay buffer.
+        self._timestamp = None
 
-    # Increment counts and record the current time
-    counts = self._counter.increment(steps=1, walltime=elapsed_time)
+    def step(self):
+        transitions = next(self._iterator)
 
-    # Attempts to write the logs.
-    self._logger.write({**metrics, **counts})
+        self._state, metrics = self._sgd_step(self._state, transitions)
 
-  def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
-    # We only expose the variables for the learned policy and critic. The target
-    # policy and critic are internal details.
-    variables = {
-        'policy': self._state.target_policy_params,
-        'critic': self._state.target_critic_params,
-    }
-    return [variables[name] for name in names]
+        # Compute elapsed time.
+        timestamp = time.time()
+        elapsed_time = timestamp - self._timestamp if self._timestamp else 0
+        self._timestamp = timestamp
 
-  def save(self) -> TrainingState:
-    return self._state
+        # Increment counts and record the current time
+        counts = self._counter.increment(steps=1, walltime=elapsed_time)
 
-  def restore(self, state: TrainingState):
-    self._state = state
+        # Attempts to write the logs.
+        self._logger.write({**metrics, **counts})
+
+    def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
+        # We only expose the variables for the learned policy and critic. The target
+        # policy and critic are internal details.
+        variables = {
+            "policy": self._state.target_policy_params,
+            "critic": self._state.target_critic_params,
+        }
+        return [variables[name] for name in names]
+
+    def save(self) -> TrainingState:
+        return self._state
+
+    def restore(self, state: TrainingState):
+        self._state = state

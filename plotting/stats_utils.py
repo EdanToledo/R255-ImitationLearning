@@ -22,7 +22,7 @@ rc("text", usetex=False)
 # self contained and user friendly as well as added docstrings.
 
 
-def score_normalization(score: float, min_score: float, max_score: float) -> float:
+def score_normalisation(score: float, min_score: float, max_score: float) -> float:
     """Normalises score.
 
     Args:
@@ -50,7 +50,6 @@ def aggregate_metrics(data_dict: Dict[str, np.ndarray], optimality_threshold=1):
         axes: `axes.Axes` or array of Axes.
 
     """
-
     aggregate_func = lambda x: np.array(
         [
             metrics.aggregate_median(x),
@@ -65,9 +64,9 @@ def aggregate_metrics(data_dict: Dict[str, np.ndarray], optimality_threshold=1):
     fig, axes = plot_utils.plot_interval_estimates(
         aggregate_scores,
         aggregate_score_cis,
+        algorithms=None,
         metric_names=["Median", "IQM", "Mean", "Optimality Gap"],
-        xlabel="Normalized Score",
-    )
+        xlabel='Normalised Score')
 
     return fig, axes
 

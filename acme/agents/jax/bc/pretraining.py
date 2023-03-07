@@ -25,39 +25,40 @@ import jax
 import optax
 
 
-def train_with_bc(make_demonstrations: Callable[[int],
-                                                Iterator[types.Transition]],
-                  networks: bc_networks.BCNetworks,
-                  loss: losses.BCLoss,
-                  num_steps: int = 100000) -> networks_lib.Params:
-  """Trains the given network with BC and returns the params.
+def train_with_bc(
+    make_demonstrations: Callable[[int], Iterator[types.Transition]],
+    networks: bc_networks.BCNetworks,
+    loss: losses.BCLoss,
+    num_steps: int = 100000,
+) -> networks_lib.Params:
+    """Trains the given network with BC and returns the params.
 
-  Args:
-    make_demonstrations: A function (batch_size) -> iterator with demonstrations
-      to be imitated.
-    networks: Network taking (params, obs, is_training, key) as input
-    loss: BC loss to use.
-    num_steps: number of training steps
+    Args:
+      make_demonstrations: A function (batch_size) -> iterator with demonstrations
+        to be imitated.
+      networks: Network taking (params, obs, is_training, key) as input
+      loss: BC loss to use.
+      num_steps: number of training steps
 
-  Returns:
-    The trained network params.
-  """
-  demonstration_iterator = make_demonstrations(256)
-  prefetching_iterator = utils.sharded_prefetch(
-      demonstration_iterator,
-      buffer_size=2,
-      num_threads=jax.local_device_count())
+    Returns:
+      The trained network params.
+    """
+    demonstration_iterator = make_demonstrations(256)
+    prefetching_iterator = utils.sharded_prefetch(
+        demonstration_iterator, buffer_size=2, num_threads=jax.local_device_count()
+    )
 
-  learner = learning.BCLearner(
-      networks=networks,
-      random_key=jax.random.PRNGKey(0),
-      loss_fn=loss,
-      prefetching_iterator=prefetching_iterator,
-      optimizer=optax.adam(1e-4),
-      num_sgd_steps_per_step=1)
+    learner = learning.BCLearner(
+        networks=networks,
+        random_key=jax.random.PRNGKey(0),
+        loss_fn=loss,
+        prefetching_iterator=prefetching_iterator,
+        optimizer=optax.adam(1e-4),
+        num_sgd_steps_per_step=1,
+    )
 
-  # Train the agent
-  for _ in range(num_steps):
-    learner.step()
+    # Train the agent
+    for _ in range(num_steps):
+        learner.step()
 
-  return learner.get_variables(['policy'])[0]
+    return learner.get_variables(["policy"])[0]

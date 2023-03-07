@@ -25,8 +25,8 @@ NestedTensor = Any
 # pytype: disable=not-supported-yet
 NestedSpec = Union[
     specs.Array,
-    Iterable['NestedSpec'],
-    Mapping[Any, 'NestedSpec'],
+    Iterable["NestedSpec"],
+    Mapping[Any, "NestedSpec"],
 ]
 # pytype: enable=not-supported-yet
 
@@ -38,28 +38,29 @@ TensorValuedCallable = Callable[..., NestedTensor]
 
 
 class Batches(int):
-  """Helper class for specification of quantities in units of batches.
+    """Helper class for specification of quantities in units of batches.
 
-  Example usage:
+    Example usage:
 
-      # Configure the batch size and replay size in units of batches.
-      config.batch_size = 32
-      config.replay_size = Batches(4)
+        # Configure the batch size and replay size in units of batches.
+        config.batch_size = 32
+        config.replay_size = Batches(4)
 
-      # ...
+        # ...
 
-      # Convert the replay size at runtime.
-      if isinstance(config.replay_size, Batches):
-        config.replay_size = config.replay_size * config.batch_size  # int: 128
+        # Convert the replay size at runtime.
+        if isinstance(config.replay_size, Batches):
+          config.replay_size = config.replay_size * config.batch_size  # int: 128
 
-  """
+    """
 
 
 class Transition(NamedTuple):
-  """Container for a transition."""
-  observation: NestedArray
-  action: NestedArray
-  reward: NestedArray
-  discount: NestedArray
-  next_observation: NestedArray
-  extras: NestedArray = ()
+    """Container for a transition."""
+
+    observation: NestedArray
+    action: NestedArray
+    reward: NestedArray
+    discount: NestedArray
+    next_observation: NestedArray
+    extras: NestedArray = ()

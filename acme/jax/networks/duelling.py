@@ -24,37 +24,36 @@ import jax.numpy as jnp
 
 
 class DuellingMLP(hk.Module):
-  """A Duelling MLP Q-network."""
+    """A Duelling MLP Q-network."""
 
-  def __init__(
-      self,
-      num_actions: int,
-      hidden_sizes: Sequence[int],
-      w_init: Optional[hk.initializers.Initializer] = None,
-  ):
-    super().__init__(name='duelling_q_network')
+    def __init__(
+        self,
+        num_actions: int,
+        hidden_sizes: Sequence[int],
+        w_init: Optional[hk.initializers.Initializer] = None,
+    ):
+        super().__init__(name="duelling_q_network")
 
-    self._value_mlp = hk.nets.MLP([*hidden_sizes, 1], w_init=w_init)
-    self._advantage_mlp = hk.nets.MLP([*hidden_sizes, num_actions],
-                                      w_init=w_init)
+        self._value_mlp = hk.nets.MLP([*hidden_sizes, 1], w_init=w_init)
+        self._advantage_mlp = hk.nets.MLP([*hidden_sizes, num_actions], w_init=w_init)
 
-  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
-    """Forward pass of the duelling network.
+    def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+        """Forward pass of the duelling network.
 
-    Args:
-      inputs: 2-D tensor of shape [batch_size, embedding_size].
+        Args:
+          inputs: 2-D tensor of shape [batch_size, embedding_size].
 
-    Returns:
-      q_values: 2-D tensor of action values of shape [batch_size, num_actions]
-    """
+        Returns:
+          q_values: 2-D tensor of action values of shape [batch_size, num_actions]
+        """
 
-    # Compute value & advantage for duelling.
-    value = self._value_mlp(inputs)  # [B, 1]
-    advantages = self._advantage_mlp(inputs)  # [B, A]
+        # Compute value & advantage for duelling.
+        value = self._value_mlp(inputs)  # [B, 1]
+        advantages = self._advantage_mlp(inputs)  # [B, A]
 
-    # Advantages have zero mean.
-    advantages -= jnp.mean(advantages, axis=-1, keepdims=True)  # [B, A]
+        # Advantages have zero mean.
+        advantages -= jnp.mean(advantages, axis=-1, keepdims=True)  # [B, A]
 
-    q_values = value + advantages  # [B, A]
+        q_values = value + advantages  # [B, A]
 
-    return q_values
+        return q_values

@@ -49,15 +49,11 @@ flags.DEFINE_integer(
     "Number of batches used for calculating the normalization statistics.",
 )
 flags.DEFINE_integer("evaluate_every", 20, "Evaluation period.")
-flags.DEFINE_integer(
-    "evaluation_episodes", 10, "Evaluation episodes."
-)
+flags.DEFINE_integer("evaluation_episodes", 10, "Evaluation episodes.")
 flags.DEFINE_integer("seed", 0, "Random seed for learner and evaluator.")
 
 # Environment flags.
-flags.DEFINE_string(
-    "env_name", "HalfCheetah-v2", "Gym mujoco environment name."
-)
+flags.DEFINE_string("env_name", "HalfCheetah-v2", "Gym mujoco environment name.")
 
 
 def main(_):
@@ -69,7 +65,7 @@ def main(_):
     key, dataset_key, evaluator_key = jax.random.split(key, 3)
 
     dataset_name = helpers.get_dataset_name(FLAGS.env_name)
-    
+
     # Load the dataset.
     dataset = tensorflow_datasets.load(dataset_name)["train"]
     # Unwrap the environment to get the demonstrations.
