@@ -90,7 +90,7 @@ def probability_of_improvement(algorithm_pairs: Dict[str, Tuple[float, float]]):
     )
 
 
-def sample_efficiency_curve(data_dict: Dict[str, np.ndarray], interval: int):
+def sample_efficiency_curve(data_dict: Dict[str, np.ndarray], interval: int, gap_between_steps : int = None):
     """Generate sample efficiency plots.
 
     Args:
@@ -101,7 +101,9 @@ def sample_efficiency_curve(data_dict: Dict[str, np.ndarray], interval: int):
     Returns:
         `axes.Axes` : object containing the plot.
     """
-
+    if gap_between_steps is None:
+        gap_between_steps = 1
+    
     timesteps = np.arange(1, list(data_dict.values())[0].shape[-1], interval) - 1
     data_timesteps_scores_dict = {
         algorithm: score[:, :, timesteps] for algorithm, score in data_dict.items()
@@ -113,7 +115,7 @@ def sample_efficiency_curve(data_dict: Dict[str, np.ndarray], interval: int):
         data_timesteps_scores_dict, iqm, reps=50000
     )
     return plot_utils.plot_sample_efficiency_curve(
-        timesteps + 1,
+        timesteps*gap_between_steps + 1,
         iqm_scores,
         iqm_cis,
         xlabel=r"Number of Timesteps",

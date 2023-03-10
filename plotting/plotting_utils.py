@@ -1,3 +1,4 @@
+from collections import defaultdict
 import functools
 from os import listdir
 from os.path import isfile, join
@@ -15,7 +16,7 @@ import seaborn as sns
 sns.set_style("white")
 
 
-normalisation_values = {"halfcheetah" : (-280.18, 12135.0), "hopper" : (-20.27, 3234.3), "walker2d" : (1.63, 4592.3)}
+normalisation_values = {"HalfCheetah" : (-280.18, 12135.0), "hopper" : (-20.27, 3234.3), "Walker2d" : (1.63, 4592.3)}
 
 def atoi(text):
     return int(text) if text.isdigit() else text
@@ -30,21 +31,49 @@ def natural_keys(text):
     return [atoi(c) for c in re.split(r"(\d+)", text)]
 
 def read_all_csvs(csv_folder_path):
-    files = [f for f in listdir(csv_folder_path) if isfile(join(csv_folder_path, f))]
+    files = [f for f in listdir(csv_folder_path) if isfile(join(csv_folder_path, f)) and f != ".DS_Store"]
     files.sort(key=natural_keys)
 
-    data = {}
+    data = defaultdict(lambda : defaultdict(lambda : {}))
     for filename in files:
         filepath = join(csv_folder_path, filename)
+        
+        vals = filename.split("_")
+        alg = vals[0][4:]
+        seed = vals[2]
+        env = vals[-2][:vals[-2].index("-")]
+
         df = pd.read_csv(filepath)
         run_evaluation_scores = np.array(df["Value"])
-        # Temporary - needs to be in shape num runs x num envs x num timesteps
-        run_evaluation_scores = np.expand_dims(np.expand_dims(run_evaluation_scores, 0), 0)
+
+        run_evaluation_scores = score_normalisation(run_evaluation_scores, *normalisation_values[env])
+
+        run_evaluation_scores = run_evaluation_scores.reshape(1,1,-1)
+
+        data[alg][seed][env] = run_evaluation_scores
+       
+    final_data = {}
+    
+    for alg, d in data.items():
+        alg_scores = None
+        for seed, di in d.items():
+            env_scores = None
+            for env, score in di.items():
+                
+                if env_scores is None:
+                    env_scores = score
+                else:
+                    env_scores = np.concatenate([env_scores, score],1)
+            
+            if alg_scores is None:
+                alg_scores = env_scores
+            else:
+                alg_scores = np.concatenate([alg_scores, env_scores], 0)
         
-        data[filename[4:filename.index("_seed")]] = run_evaluation_scores
+        final_data[alg] = alg_scores
 
 
-    return data
+    return final_data
 
 def calculate_final_scores(evaluation_metrics):
 
@@ -68,32 +97,27 @@ def add_dummy_data(evaluation_metrics, num_runs):
 
     return evaluation_metrics
         
-        
-       
 
-def plot_scores(folder_path, environment_name):
+def plot_scores(folder_path):
     evaluation_metrics = read_all_csvs(folder_path)
-    evaluation_metrics = normalise_evaluation_metrics(evaluation_metrics, *normalisation_values[environment_name])
-
-    # evaluation_metrics = add_dummy_data(evaluation_metrics, 2)
     
-    ax = sample_efficiency_curve(evaluation_metrics, 50)
+    ax = sample_efficiency_curve(evaluation_metrics, 40, 500)
     plt.legend()
-    plt.savefig(f"SampleEfficiency_{environment_name}")
+    # plt.savefig(f"SampleEfficiency")
 
     evaluation_metrics = calculate_final_scores(evaluation_metrics)
 
     ax = performance_profiles(evaluation_metrics)
     plt.legend()
-    plt.savefig(f"PerformanceProfile_{environment_name}")
+    # plt.savefig(f"PerformanceProfile")
 
    
     fig, axes = aggregate_metrics(evaluation_metrics)
-    plt.savefig(f"AggregateMetrics_{environment_name}")
+    # plt.savefig(f"AggregateMetrics")
     
     plt.show()
 
 if __name__ == "__main__":
-    folder = "/Users/edantoledo/UniversityWork/ImitationLearning/csvs/halfcheetah/seed_0"
+    folder = "/Users/edantoledo/UniversityWork/ImitationLearning/csvs"
     
-    plot_scores(folder, "halfcheetah")
+    plot_scores(folder)
