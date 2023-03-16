@@ -30,7 +30,7 @@ def natural_keys(text):
     """
     return [atoi(c) for c in re.split(r"(\d+)", text)]
 
-def read_all_csvs(csv_folder_path):
+def read_all_csvs(csv_folder_path, only_imitation_learning = False):
     files = [f for f in listdir(csv_folder_path) if isfile(join(csv_folder_path, f)) and f != ".DS_Store"]
     files.sort(key=natural_keys)
 
@@ -42,6 +42,17 @@ def read_all_csvs(csv_folder_path):
         alg = vals[0][4:]
         seed = vals[2]
         env = vals[-2][:vals[-2].index("-")]
+        if only_imitation_learning:
+            if vals[3] == "dataset":
+                datasize = vals[4]
+                if datasize == "None":
+                    datasize = "100%"
+                else:
+                    datasize = str(int(datasize)//10) + "%"
+                alg = alg+" "+datasize
+            else:
+                continue
+        
 
         df = pd.read_csv(filepath)
         run_evaluation_scores = np.array(df["Value"])
@@ -69,6 +80,7 @@ def read_all_csvs(csv_folder_path):
                 alg_scores = env_scores
             else:
                 alg_scores = np.concatenate([alg_scores, env_scores], 0)
+ 
         
         final_data[alg] = alg_scores
 
@@ -101,20 +113,17 @@ def add_dummy_data(evaluation_metrics, num_runs):
 def plot_scores(folder_path):
     evaluation_metrics = read_all_csvs(folder_path)
     
-    ax = sample_efficiency_curve(evaluation_metrics, 40, 500)
-    plt.legend()
-    # plt.savefig(f"SampleEfficiency")
+    sorted_keys = sorted(evaluation_metrics.keys(), key=natural_keys)
 
-    evaluation_metrics = calculate_final_scores(evaluation_metrics)
-
-    ax = performance_profiles(evaluation_metrics)
-    plt.legend()
-    # plt.savefig(f"PerformanceProfile")
-
-   
-    fig, axes = aggregate_metrics(evaluation_metrics)
-    # plt.savefig(f"AggregateMetrics")
+    sorted_eval_metrics = {key : evaluation_metrics[key] for key in sorted_keys}
     
+    ax = sample_efficiency_curve(sorted_eval_metrics, 40, 500)
+    plt.legend()
+
+    sorted_eval_metrics = calculate_final_scores(sorted_eval_metrics)
+
+    fig, axes = aggregate_metrics(sorted_eval_metrics)
+
     plt.show()
 
 if __name__ == "__main__":
